@@ -13,8 +13,8 @@
         <dependency org="javax.servlet" name="servlet-api" rev="2.5" conf="build->default"/>
 
         <!-- scala -->
-        <dependency org="org.scala-lang" name="scala-library" rev="2.9.1" conf="build->default"/>
-        <dependency org="org.scala-lang" name="scala-compiler" rev="2.9.1" conf="build->default"/>
+        <dependency org="org.scala-lang" name="scala-library" rev="2.9.2-SNAPSHOT" conf="build->default"/>
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.9.2-SNAPSHOT" conf="build->default"/>
     
         <!-- jersey dependencies -->
         <dependency org="javax.ws.rs" name="jsr311-api" rev="1.1.1" conf="build->default"/>
