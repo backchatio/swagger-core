@@ -71,6 +71,14 @@ public class TypeUtil {
     }
 
     /**
+     * @return true if the passed type represents a paramterized array
+     */
+    public static boolean isParameterizedArray(Type genericType) {
+        boolean isArray =  genericType.getClass().isArray();
+        return isArray;
+    }
+
+    /**
      * Gets a parameterized lists types if they are in com.wordnik.* packages
      */
     private static List<String> getWordnikParameterTypes(Type genericType) {

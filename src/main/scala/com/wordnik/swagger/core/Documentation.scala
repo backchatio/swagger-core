@@ -404,23 +404,26 @@ class DocumentationObject extends Name {
     if(fields.length > 0) schemaObject.properties = new HashMap[String, DocumentationSchema]() else return null
 
     for (currentField <- fields) {
-      val fieldSchema: DocumentationSchema = new DocumentationSchema()
-      setSchemaTypeDef(currentField, fieldSchema)
-      fieldSchema.required = currentField.required
-      fieldSchema.description = currentField.description
-      //TODO do we need the following fields - access and notes - not part of JSON schema
-      fieldSchema.notes = currentField.notes
-      fieldSchema.access = currentField.paramAccess
+      //this means param is of type that swagger doc can't understand Example: scala lists etc
+      if (null != currentField.paramType){
+        val fieldSchema: DocumentationSchema = new DocumentationSchema()
+        setSchemaTypeDef(currentField, fieldSchema)
+        fieldSchema.required = currentField.required
+        fieldSchema.description = currentField.description
+        //TODO do we need the following fields - access and notes - not part of JSON schema
+        fieldSchema.notes = currentField.notes
+        fieldSchema.access = currentField.paramAccess
 
-      if(currentField.allowableValues != null){
-        fieldSchema.allowableValues = currentField.allowableValues
+        if(currentField.allowableValues != null){
+          fieldSchema.allowableValues = currentField.allowableValues
+        }
+
+        val useWrapperName = currentField.getWrapperName != null && currentField.getWrapperName.trim().length() > 0
+        if(useWrapperName)
+          schemaObject.properties.put(currentField.getWrapperName(), fieldSchema)
+        else
+          schemaObject.properties.put(currentField.getName, fieldSchema)
       }
-
-      val useWrapperName = currentField.getWrapperName != null && currentField.getWrapperName.trim().length() > 0
-      if(useWrapperName)
-        schemaObject.properties.put(currentField.getWrapperName(), fieldSchema)
-      else
-        schemaObject.properties.put(currentField.getName, fieldSchema)
     }
 
     schemaObject

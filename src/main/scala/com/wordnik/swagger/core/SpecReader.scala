@@ -31,6 +31,7 @@ import javax.xml.bind.annotation._
 
 import scala.collection.JavaConversions._
 import collection.mutable.ListBuffer
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 
 object ApiReader {
   val GET = "GET";
@@ -402,17 +403,26 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
   }
 
   def parse(): DocumentationObject = {
-    for (method <- hostClass.getDeclaredMethods) {
-      if (Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(method.getModifiers()))
-        parseMethod(method)
-    }
-
-    for (field <- hostClass.getDeclaredFields) {
-      if (Modifier.isPublic(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
-        parseField(field)
-    }
-
+    parseRecurrsive(hostClass);
     documentationObject
+  }
+
+  /**
+   * Parse methods from the class and all of its parent classes
+   */
+  def parseRecurrsive(hostClass:Class[_]):Unit = {
+    if (null != hostClass) {
+      for (method <- hostClass.getDeclaredMethods) {
+        if (Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(method.getModifiers()))
+          parseMethod(method)
+      }
+
+      for (field <- hostClass.getDeclaredFields) {
+        if (Modifier.isPublic(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
+          parseField(field)
+      }
+      parseRecurrsive(hostClass.getSuperclass)
+    }
   }
 
   private def parseField(field: Field): Any = {
@@ -445,6 +455,7 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
     docParam.required = false;
 
     var isTransient = false;
+    var hasElementAnnotation = false;
 
     for (ma <- methodAnnotations) {
       ma match {
@@ -470,6 +481,7 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
         };
 
         case xmlElement: XmlElement => {
+          hasElementAnnotation = true;
           docParam.name = readString(xmlElement.name, docParam.name, "##default")
           docParam.name = readString(name, docParam.name)
           docParam.defaultValue = readString(xmlElement.defaultValue, docParam.defaultValue, "\u0000")
@@ -489,8 +501,9 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
       }
     }
 
-    //sometimes transient annotation is defined on property, so while looking at getter and setter make sure there is no transient annotation on property
-    if(!isTransient && null != name){
+    //sometimes transient annotation is defined on property, so while looking at getter and setter make sure there is
+    // no transient annotation on property if there is no XMLElement annotation
+    if(!isTransient && null != name && !hasElementAnnotation){
       try{
         val propertyAnnotations = this.hostClass.getDeclaredField(name).getAnnotations()
         for( pa <- propertyAnnotations){
@@ -529,8 +542,15 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
           val keyName = readName(keyType.asInstanceOf[Class[_]])
           val valueName = readName(valueType.asInstanceOf[Class[_]])
           docParam.paramType = "Map[" + keyName + "," + valueName + "]"
+        } else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.asInstanceOf[Class[_]].isArray) {
+          var arrayClass= returnType.asInstanceOf[Class[_]].getComponentType
+          docParam.paramType = "Array[" + arrayClass.getName + "]"
         } else {
-          docParam.paramType = readName(genericReturnType.asInstanceOf[Class[_]])
+          //we might also have properties that are parametarized by not assignable to java collections. Examples: Scala collections
+          ///This step will ignore all those fields.
+          if (!genericReturnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl])){
+            docParam.paramType = readName(genericReturnType.asInstanceOf[Class[_]])
+          }
         }
       }
 

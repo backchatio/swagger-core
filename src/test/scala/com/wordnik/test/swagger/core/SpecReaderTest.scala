@@ -1,6 +1,5 @@
 package com.wordnik.test.swagger.core
 
-import com.wordnik.swagger.core.ApiPropertiesReader
 import org.codehaus.jackson.map._
 import org.codehaus.jackson.map.DeserializationConfig.Feature
 import org.codehaus.jackson.map.annotate.JsonSerialize
@@ -15,6 +14,8 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import scala.reflect.BeanProperty
 import java.io.ByteArrayInputStream
+import scala.collection.JavaConverters._
+import com.wordnik.swagger.core.{DocumentationParameter, DocumentationObject, ApiPropertiesReader}
 
 @RunWith(classOf[JUnitRunner])
 class SpecReaderTest extends FlatSpec with ShouldMatchers {
@@ -31,6 +32,36 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
   it should "read a ScalaCaseClass" in {
     var docObj = ApiPropertiesReader.read(classOf[ScalaCaseClass])
     assert(null != docObj.getName)
+  }
+
+  it should "read different data types properly " in {
+    var docObj = ApiPropertiesReader.read(classOf[SampleDataTypes])
+    var assertedFields = 0;
+    for(field <- docObj.getFields.asScala){
+      field.name match {
+        case "sampleByte" => assert(field.paramType === "byte"); assertedFields += 1;
+        case "sampleArrayByte" => assert(field.paramType === "Array[byte]"); assertedFields += 1;
+        case "sampleListString" => assert(field.paramType === "Array[java.lang.String]"); assertedFields += 1;
+        case _ =>
+      }
+    }
+    assert(assertedFields === 3)
+  }
+
+  it should "read objects and its super class properties" in {
+    var docObj = ApiPropertiesReader.read(classOf[ExtendedClass])
+    var assertedFields = 0;
+    for(field <- docObj.getFields.asScala){
+      field.name match {
+        case "stringProperty" => assert(field.paramType === "string");assertedFields += 1;
+        case "intProperty" => assert(field.paramType === "int");assertedFields += 1;
+        case "label" => assert(field.paramType === "string"); assertedFields += 1;
+        case "transientFieldSerializedGetter" => assert(field.paramType === "string"); assertedFields += 1;
+
+        case _ =>
+      }
+    }
+    assert(assertedFields === 4)
   }
 }
 
@@ -87,6 +118,7 @@ class JaxbSerializationTest extends FlatSpec with ShouldMatchers {
     val p = u.unmarshal(b).asInstanceOf[ScalaCaseClass]
     assert(p.testInt == 5)
   }
+
 }
 
 @RunWith(classOf[JUnitRunner])
@@ -127,6 +159,45 @@ class JsonSerializationTest extends FlatSpec with ShouldMatchers {
   }
 }
 
+@XmlRootElement(name= "BaseClass")
+class BaseClass {
+  @BeanProperty var stringProperty:String = _
+  @BeanProperty var IntProperty:Int = _
+
+  @XmlTransient
+  var label:String =_
+
+  def setLabel(label: String) =
+    this.label = label
+
+  @XmlElement(name = "label")
+  def getLabel() = label
+}
+
+@XmlRootElement(name= "ExtendedClass")
+class ExtendedClass extends BaseClass{
+  @BeanProperty var floatProperty:Float = _
+  @BeanProperty var longProperty:Long = _
+
+  @XmlTransient
+  var transientFieldSerializedGetter:String =_
+
+  def setTransientFieldSerializedGetter(value: String) =
+    this.transientFieldSerializedGetter = value
+
+  @XmlElement(name = "transientFieldSerializedGetter")
+  def getTransientFieldSerializedGetter() = transientFieldSerializedGetter
+}
+
+@XmlRootElement(name= "sampleDataTypes")
+class SampleDataTypes {
+  @BeanProperty var sampleByte:Byte = _
+  @BeanProperty var sampleArrayByte:Array[Byte] = _
+  @BeanProperty var sampleArrayString:Array[String] = _
+  @BeanProperty var sampleListString:Array[String] = _
+
+}
+
 @XmlRootElement(name = "simplePojo")
 class SimplePojo {
   private var te: Int = 1
@@ -161,3 +232,9 @@ case class ScalaCaseClass() {
   @BeanProperty
   var testTransient:List[String] = _
 }
+
+
+
+
+
+
