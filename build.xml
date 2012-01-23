@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<project name="swagger-core" xmlns:ivy="antlib:org.apache.ivy.ant" default="build.all" basedir=".">
+<project name="swagger-core_2.8.1" xmlns:ivy="antlib:org.apache.ivy.ant" default="build.all" basedir=".">
 	<property environment="env" />
-	<property name="version.identifier" value="1.1-SNAPSHOT.121130" />
+	<property name="version.identifier" value="1.1-SNAPSHOT.120123" />
 	<property name="artifact.ext" value="jar" />
 	<property name="organization" value="com.wordnik" />
 	<property environment="env" />
@@ -63,7 +63,7 @@
 
 	<!-- copies all dependencies into the lib folder -->
 	<target name="resolve" description="retreive dependencies with ivy">
-		<ivy:retrieve pattern="${basedir}/lib/[artifact]-[revision].[ext]" conf="build" />
+		<ivy:retrieve pattern="${basedir}/lib/[artifact]-[revision].[ext]" conf="compile" />
 	</target>
 
 	<target name="fastcompile" description="builds the module without artifact resolution or cleaning">
@@ -114,7 +114,7 @@
 		<ivy:makepom ivyfile="ivy.xml" pomfile="build/${module}-${version.identifier}.pom" />
 
 		<echo message="publishing module ${module}" />
-		<ivy:publish resolver="local" organisation="${organization}" conf="source,test,build,pom,common" pubrevision="${version.identifier}" overwrite="true">
+		<ivy:publish resolver="local" organisation="${organization}" conf="source,test,compile,pom,common" pubrevision="${version.identifier}" overwrite="true">
 			<artifacts pattern="build/[artifact]-[revision].[ext]" />
 		</ivy:publish>
 		<echo message="project ${module} published locally with version lib/${version.identifier}" />
