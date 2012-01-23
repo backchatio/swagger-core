@@ -63,7 +63,7 @@
 
 	<!-- copies all dependencies into the lib folder -->
 	<target name="resolve" description="retreive dependencies with ivy">
-		<ivy:retrieve pattern="${basedir}/lib/[artifact]-[revision].[ext]" conf="compile" />
+		<ivy:retrieve pattern="${basedir}/lib/[artifact]-[revision].[ext]" conf="compile,test" />
 	</target>
 
 	<target name="fastcompile" description="builds the module without artifact resolution or cleaning">
@@ -88,7 +88,6 @@
 			<include name="**/*.scala" />
 			<include name="**/*.java" />
 		</scalac>
-
 		<javac srcdir="src/main/scala" debug="true" destdir="build/main/java">
 			<classpath>
 				<fileset dir="lib">
@@ -106,6 +105,91 @@
 		<jar jarfile="build/${module}-${version.identifier}.${artifact.ext}">
 			<fileset dir="build/main/java" />
 		</jar>
+	</target>
+
+    <target name="test.compile" description="compiles the test files">
+        <echo message="building scala test sources..."/>
+        <delete>
+            <fileset dir="build">
+                <include name="${module}-test*.jar"/>
+            </fileset>
+        </delete>
+        <mkdir dir="build/test"/>
+        <mkdir dir="build/test/java"/>
+        <scalac srcdir="src/test/scala" destdir="build/test/java">
+            <classpath>
+                <pathelement location="build/test/java" />
+                <fileset dir="lib">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="lib/ext">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="build">
+                    <include name="${module}*.jar"/>
+                </fileset>
+                <fileset dir="${scala.home}/lib"/>
+            </classpath>
+            <include name="**/*.scala" />
+            <include name="**/*.java" />
+        </scalac>
+        <javac srcdir="src/test/scala" debug="on" destdir="build/test/java">
+            <classpath>
+                <pathelement location="build/test/java" />
+                <fileset dir="lib">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="lib/ext">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="build">
+                    <include name="${release.module}*.jar"/>
+                </fileset>
+                <fileset dir="${scala.home}/lib"/>
+            </classpath>
+            <include name="**/*.scala" />
+            <include name="**/*.java" />
+        </javac>
+        <jar jarfile="build/${release.module}-test-${release.version}.${artifact.ext}">
+            <fileset dir="build/test/java" />
+        </jar>
+    </target>
+
+	<target name="testone.scala" 
+		description="runs the test you specify on the command line with -Dtest="
+		depends="verify-test-specified">
+		<echo message="scala unit testing..."/>
+		
+		<mkdir dir="reports"/>
+
+		<taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestAntTask">
+            <classpath>
+                <pathelement location="build/test/java" />
+                <fileset dir="lib">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="lib/ext">
+                    <include name="*.jar" />
+                </fileset>
+                <fileset dir="build">
+                    <include name="${module}*.jar"/>
+                </fileset>
+                <fileset dir="${scala.home}/lib"/>
+            </classpath>
+	   	</taskdef>
+
+		<scalatest runpath="build/test/scala" fork="true">
+			<jvmarg value="-Dlog4j.configuration=file:conf/log4j.properties"/>
+			<jvmarg value="-Dlog4j.debug=true"/>
+			<jvmarg value="-Xmx2100m" />
+			<reporter type="junitxml" config="FAB" directory="reports"/>
+			<reporter type="stdout" />
+			<suite classname="${test}"/>
+		</scalatest>
+	</target>
+
+	<target name="verify-test-specified" unless="test">
+		<fail message="You must run this target with -Dtest=TestName" />
 	</target>
 
 	<target name="deploy" depends="build.all" description="builds and copies the artifact to the local ivy cache">

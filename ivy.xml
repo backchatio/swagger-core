@@ -42,5 +42,6 @@
             <exclude org="asm" name="asm"/>
         </dependency>
         <dependency org="org.scalatest" name="scalatest_2.8.1" rev="1.5.1" conf="test->default"/>
+	<!--exclude org="org.jboss.weld"/-->
     </dependencies>
 </ivy-module>
