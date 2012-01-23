@@ -374,7 +374,6 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
       case _ => ep
     }
   }
-
 }
 
 object ApiPropertiesReader {
