@@ -19,7 +19,7 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
   it should "read a SimplePojo" in {
     var docObj = ApiPropertiesReader.read(classOf[SampleOutput])
     assert(docObj != null)
-    assert((docObj.getFields.map(f=>f.name).toSet & Set("name","value")).size == 2)
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("theName","theValue")).size === 2)
   }
 
   it should "read a simple resource class" in {
@@ -32,7 +32,7 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     		null)
     assert(doc.getApis.size == 1)
     assert(doc.getModels.size == 1)
-    assert((doc.getModels(0).getFields.map(f=>f.name).toSet & Set("name","value")).size == 2)
+    assert((doc.getModels(0).getFields.map(f=>f.name).toSet & Set("theName","theValue")).size === 2)
     println(JsonUtil.getJsonMapper.writeValueAsString(doc))
   }
 }

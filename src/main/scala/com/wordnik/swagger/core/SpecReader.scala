@@ -31,6 +31,7 @@ import javax.xml.bind.annotation._
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 
 object ApiReader {
   private val LOGGER = LoggerFactory.getLogger(ApiReader.getClass)
@@ -454,7 +455,7 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
       methodFieldName.length > 2) {
       methodFieldName.substring(2, 3).toLowerCase() + methodFieldName.substring(3, methodFieldName.length())
     } else {
-      null
+      methodFieldName
     }
   }
 
@@ -465,7 +466,52 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
     docParam.required = false
     var isTransient = false
 
-    for (ma <- methodAnnotations) {
+    isTransient = processAnnotations(name, methodAnnotations, docParam)
+
+    if(!isTransient && null != name){
+      try {
+        val propertyAnnotations = this.hostClass.getDeclaredField(name).getAnnotations()
+        isTransient = processAnnotations(name, propertyAnnotations, docParam)
+      } catch {
+        //this means there is no field declared to look for field level annotations.
+        case e: java.lang.NoSuchFieldException => isTransient = false
+      }
+    }
+
+    if (docParam.name == null && name != null)
+      docParam.name = name
+
+    if (!isTransient && docParam.name != null) {
+      if (docParam.paramType == null) {
+        if (TypeUtil.isParameterizedList(genericReturnType)) {
+          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+          val valueType = parameterizedType.getActualTypeArguments.head
+          docParam.paramType = "List[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
+        } else if (TypeUtil.isParameterizedSet(genericReturnType)) {
+          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+          val valueType = parameterizedType.getActualTypeArguments.head
+          docParam.paramType = "Set[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
+        } else if (TypeUtil.isParameterizedMap(genericReturnType)) {
+          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+          val typeArgs = parameterizedType.getActualTypeArguments
+          val keyType = typeArgs(0)
+          val valueType = typeArgs(1)
+          val keyName = readName(keyType.asInstanceOf[Class[_]])
+          val valueName = readName(valueType.asInstanceOf[Class[_]])
+          docParam.paramType = "Map[" + keyName + "," + valueName + "]"
+        } else
+          if (!genericReturnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl])){
+            docParam.paramType = readName(genericReturnType.asInstanceOf[Class[_]])
+          }
+      }
+      if (!"void".equals(docParam.paramType))
+        documentationObject.addField(docParam)
+    }
+  }
+
+  private def processAnnotations(name:String, annotations: Array[Annotation], docParam:DocumentationParameter):Boolean = {
+    var isTransient = false
+    for (ma <- annotations) {
       ma match {
         case xmlTransient: XmlTransient => {
           isTransient = true
@@ -501,49 +547,6 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
         case _ => Unit
       }
     }
-
-    //sometimes transient annotation is defined on property, so while looking at getter and setter make sure there is no transient annotation on property
-    if (!isTransient && null != name) {
-      try {
-        val propertyAnnotations = this.hostClass.getDeclaredField(name).getAnnotations()
-        for (pa <- propertyAnnotations) {
-          pa match {
-            case xmlTransient: XmlTransient => isTransient = true
-            case _ => Unit
-          }
-        }
-      } catch {
-        //this means there is no field declared to look for field level annotations.
-        case e: java.lang.NoSuchFieldException => isTransient = false
-      }
-    }
-
-    if (docParam.name == null && name != null)
-      docParam.name = name
-
-    if (!isTransient && docParam.name != null) {
-      if (docParam.paramType == null) {
-        if (TypeUtil.isParameterizedList(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val valueType = parameterizedType.getActualTypeArguments.head
-          docParam.paramType = "List[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
-        } else if (TypeUtil.isParameterizedSet(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val valueType = parameterizedType.getActualTypeArguments.head
-          docParam.paramType = "Set[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
-        } else if (TypeUtil.isParameterizedMap(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val typeArgs = parameterizedType.getActualTypeArguments
-          val keyType = typeArgs(0)
-          val valueType = typeArgs(1)
-          val keyName = readName(keyType.asInstanceOf[Class[_]])
-          val valueName = readName(valueType.asInstanceOf[Class[_]])
-          docParam.paramType = "Map[" + keyName + "," + valueName + "]"
-        } else
-          docParam.paramType = readName(genericReturnType.asInstanceOf[Class[_]])
-      }
-      if (!"void".equals(docParam.paramType))
-        documentationObject.addField(docParam)
-    }
+    isTransient
   }
 }

@@ -18,24 +18,24 @@ import scala.reflect.BeanProperty
 class SpecReaderTest extends FlatSpec with ShouldMatchers {
   it should "read a SimplePojo" in {
     var docObj = ApiPropertiesReader.read(classOf[SimplePojo])
-    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt","testString")).size == 2)
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt","testString")).size === 2)
   }
 
   it should "read a ScalaPojo" in {
     var docObj = ApiPropertiesReader.read(classOf[ScalaPojo])
-    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt")).size == 1)
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt")).size === 1)
   }
 
   it should "read a ScalaCaseClass" in {
     var docObj = ApiPropertiesReader.read(classOf[ScalaCaseClass])
-    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt")).size == 1)
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt")).size === 1)
   }
 
   it should "read a SimplePojo with XMLElement variations" in {
     var docObj = ApiPropertiesReader.read(classOf[SimplePojo2])
     println(docObj.getFields)
     println(docObj.getFields.map(f=>f.name).toSet)
-//    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt","testString")).size == 2)
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt","testString")).size === 2)
   }
 }
 
