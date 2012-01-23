@@ -18,28 +18,21 @@ package com.wordnik.swagger.core
 
 import javax.servlet.ServletConfig
 
-/**
- * Instance of this class is responsible for reading the configurations related to swagger.
- * User: ramesh
- * Date: 11/29/11
- * Time: 7:49 PM
- */
-class ConfigReader(val sc :ServletConfig) {
+class ConfigReader(val sc: ServletConfig) {
 
-  def getBasePath():String = {
+  def getBasePath(): String = {
     if (sc != null) sc.getInitParameter("swagger.api.basepath") else null
   }
 
-  def getSwaggerVersion():String = {
+  def getSwaggerVersion(): String = {
     SwaggerSpec.version
   }
 
-  def getApiVersion():String = {
+  def getApiVersion(): String = {
     if (sc != null) sc.getInitParameter("api.version") else null
   }
 
-  def getApiFilterClassName():String = {
+  def getApiFilterClassName(): String = {
     if (sc != null) sc.getInitParameter("swagger.security.filter") else null
   }
-
 }

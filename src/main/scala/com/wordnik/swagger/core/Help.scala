@@ -21,8 +21,8 @@ import com.sun.jersey.api.core.ResourceConfig
 import org.slf4j.LoggerFactory
 
 import javax.servlet.ServletConfig
-import javax.ws.rs.{Path, GET}
-import javax.ws.rs.core.{UriInfo, HttpHeaders, Context, Response}
+import javax.ws.rs.{ Path, GET }
+import javax.ws.rs.core.{ UriInfo, HttpHeaders, Context, Response }
 
 import scala.collection.JavaConversions._
 
@@ -30,109 +30,54 @@ trait Help {
   @GET
   @ApiOperation(value = "Returns information about API parameters",
     responseClass = "com.wordnik.swagger.core.Documentation")
-  def getHelp (@Context sc :ServletConfig, @Context rc:ResourceConfig,
-               @Context headers: HttpHeaders, @Context uriInfo: UriInfo): Response = {
+  def getHelp(@Context sc: ServletConfig,
+    @Context rc: ResourceConfig,
+    @Context headers: HttpHeaders,
+    @Context uriInfo: UriInfo): Response = {
+    val reader = ConfigReaderFactory.getConfigReader(sc)
 
-    val configReader = ConfigReaderFactory.getConfigReader(sc)
-    val apiVersion = configReader.getApiVersion()
-    val swaggerVersion = configReader.getSwaggerVersion()
-    val basePath = configReader.getBasePath()
-    val apiFilterClassName = configReader.getApiFilterClassName()
+    val apiVersion = reader.getApiVersion()
+    val swaggerVersion = reader.getSwaggerVersion()
+    val basePath = reader.getBasePath()
+    val apiFilterClassName = reader.getApiFilterClassName()
 
     val filterOutTopLevelApi = true
-
-
     val currentApiEndPoint = this.getClass.getAnnotation(classOf[Api])
-    val currentApiPath = if (currentApiEndPoint != null && filterOutTopLevelApi) currentApiEndPoint.value else null
-
-    val docs = new HelpApi(apiFilterClassName).filterDocs(
-      ApiReader.read(this.getClass, apiVersion, swaggerVersion, basePath, currentApiPath), headers, uriInfo, currentApiPath)
-    Response.ok.entity(docs).build
-  }
-
-}
-
-trait ApiListing {
-
-  private val LOGGER = LoggerFactory.getLogger(classOf[ApiListing])
-
-  @GET
-  @ApiOperation(value = "Returns list of all available api endpoints",
-    responseClass="DocumentationEndPoint", multiValueResponse = true )
-  def getAllApis( @Context sc :ServletConfig, @Context rc:ResourceConfig,
-               @Context headers: HttpHeaders, @Context uriInfo: UriInfo ) : Response = {
-
-    val configReader = ConfigReaderFactory.getConfigReader(sc)
-    val apiVersion = configReader.getApiVersion()
-    val swaggerVersion = configReader.getSwaggerVersion()
-    val basePath = configReader.getBasePath()
-    val apiFilterClassName = configReader.getApiFilterClassName()
-    var apiFilter: AuthorizationFilter = null
-    if(null != apiFilterClassName) {
-      try {
-        apiFilter = SwaggerContext.loadClass(apiFilterClassName).newInstance.asInstanceOf[AuthorizationFilter]
+    if (currentApiEndPoint == null) {
+      //  TODO: handle this
+      Response.ok.entity("nada").build
+    } else {
+      val apiPath = {
+        if (filterOutTopLevelApi) {
+          currentApiEndPoint.value
+        } else null
       }
-      catch {
-        case e: ClassNotFoundException => LOGGER.error("Unable to resolve apiFilter class " + apiFilterClassName);
-        case e: ClassCastException => LOGGER.error("Unable to cast to apiFilter class " + apiFilterClassName);
+      val apiListingPath = {
+        if (filterOutTopLevelApi) {
+          if (!"".equals(currentApiEndPoint.listingPath)) currentApiEndPoint.listingPath
+          else currentApiEndPoint.value
+        } else null
       }
+      val listingClass: Class[_] = {
+        if (currentApiEndPoint.listingClass != "") {
+          SwaggerContext.loadClass(currentApiEndPoint.listingClass)
+        } else this.getClass
+      }
+      val docs = new HelpApi(apiFilterClassName).filterDocs(
+        ApiReader.read(listingClass, apiVersion, swaggerVersion, basePath, apiPath),
+        headers,
+        uriInfo,
+        apiListingPath)
+      Response.ok.entity(docs).build
     }
-
-    val resources = rc.getRootResourceClasses
-    val apiListingEndpoint = this.getClass.getAnnotation(classOf[Api])
-    val allApiDoc = new Documentation
-    for (resource <- resources) {
-      val wsPath = resource.getAnnotation(classOf[Api])
-      if(null != wsPath && wsPath.value != ApiReader.LIST_RESOURCES_PATH){
-        var api = new DocumentationEndPoint(wsPath.value+"."+ApiReader.FORMAT_STRING, wsPath.description())
-        if(!isApiAdded(allApiDoc, api)) {
-          if (null != apiFilter){
-            apiFilter match {
-              case apiAuthFilter:ApiAuthorizationFilter => {
-                if(apiAuthFilter.authorizeResource(api.path, headers, uriInfo)){
-                  allApiDoc.addApi(api)
-                }
-              }
-              case fineGrainedApiAuthFilter:FineGrainedApiAuthorizationFilter => {
-                if(fineGrainedApiAuthFilter.authorizeResource(api.path, api, headers, uriInfo)){
-                  allApiDoc.addApi(api)
-                }
-              }
-              case _ => {}
-            }
-          }else{
-            allApiDoc.addApi(api)
-          }
-        }
-      }
-    }
-
-    allApiDoc.swaggerVersion = swaggerVersion
-    allApiDoc.basePath = basePath
-    allApiDoc.apiVersion = apiVersion
-
-    Response.ok.entity(allApiDoc).build
-
   }
-
-  private def isApiAdded(allApiDoc: Documentation, endpoint: DocumentationEndPoint): Boolean = {
-    var isAdded: Boolean = false
-    if (allApiDoc.getApis != null) {
-      for (addedApi <- allApiDoc.getApis()) {
-        if (endpoint.path.equals(addedApi.path)) isAdded = true
-      }
-    }
-    isAdded
-  }
-
 }
 
 object ConfigReaderFactory {
-
-  def getConfigReader(sc :ServletConfig):ConfigReader = {
-    var configReaderStr = sc.getInitParameter("swagger.config.reader")
-    if( null == configReaderStr){
-      configReaderStr = "com.wordnik.swagger.core.ConfigReader"
+  def getConfigReader(sc: ServletConfig): ConfigReader = {
+    var configReaderStr = {
+      if (sc.getInitParameter("swagger.config.reader") == null) "com.wordnik.swagger.core.ConfigReader"
+      else sc.getInitParameter("swagger.config.reader")
     }
     val constructor = SwaggerContext.loadClass(configReaderStr).getConstructor(classOf[ServletConfig])
     val configReader = constructor.newInstance(sc).asInstanceOf[ConfigReader]

@@ -28,17 +28,13 @@ import scala.collection.JavaConversions._
 import javax.xml.bind.annotation._
 
 trait Name {
-	private var name:String =_
-	@XmlElement(name="name")
-	@JsonProperty(value="name")
-	def getName:String = {
-		name
-	}
+  private var name: String = _
+  @XmlElement(name = "name")
+  @JsonProperty(value = "name")
+  def getName: String = name
 
-	@JsonProperty(value="name")
-	def setName(name:String) = {
-		this.name = name
-	}
+  @JsonProperty(value = "name")
+  def setName(name: String) = this.name = name
 }
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -57,14 +53,11 @@ class Documentation (@BeanProperty var apiVersion: String,
   def setApis(ep: java.util.List[DocumentationEndPoint]) = {
     this._apis.clear()
     if (ep != null) {
-      for (n <- ep) {
-        _apis += n
-      }
+      for (n <- ep) _apis += n
     }
   }
 
   def addApi(ep: DocumentationEndPoint) = if (ep != null) _apis += ep
-
   def removeApi(ep: DocumentationEndPoint) = if (ep != null) _apis -= ep
 
   private var _objs = new ListBuffer[DocumentationObject]
@@ -72,7 +65,6 @@ class Documentation (@BeanProperty var apiVersion: String,
   @JsonIgnore
   @XmlElement
   def getModels = if (_objs.size > 0) asList(_objs) else null
-
   def addModel(obj: DocumentationObject) = if (obj != null) _objs += obj
 
   private var _schemas = new HashMap[String, DocumentationSchema]
@@ -87,7 +79,6 @@ class Documentation (@BeanProperty var apiVersion: String,
     for(sch <- JavaConversions.asIterator( sch.iterator )) {
       _schemas += sch
     }
-    /*this._schemas = sch*/
   }
 
   def addSchema(propertyName : String, obj: DocumentationSchema) = {
@@ -122,9 +113,7 @@ class DocumentationEndPoint(@BeanProperty var path: String, @BeanProperty var de
   def setOperations(ep: java.util.List[DocumentationOperation]) = {
     this._ops.clear()
     if (ep != null) {
-      for (n <- ep) {
-        _ops += n
-      }
+      for (n <- ep) _ops += n
     }
   }
 
@@ -134,9 +123,7 @@ class DocumentationEndPoint(@BeanProperty var path: String, @BeanProperty var de
 
   override def clone(): Object = {
     var ep = new DocumentationEndPoint(path, description)
-    for (op <- _ops) {
-      ep.addOperation((op.clone()).asInstanceOf[DocumentationOperation])
-    }
+    for (op <- _ops) ep.addOperation((op.clone()).asInstanceOf[DocumentationOperation])
     ep
   }
 }
@@ -160,9 +147,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
   def setParameters(ep: java.util.List[DocumentationParameter]) = {
     this._parameters.clear()
     if (ep != null) {
-      for (n <- ep) {
-        _parameters += n
-      }
+      for (n <- ep) _parameters += n
     }
   }
   def addParameter(param: DocumentationParameter) = _parameters += param
@@ -175,9 +160,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
   def setTags(tagList: java.util.List[String]) = {
     this._tags.clear()
     if (tagList != null && tagList.iterator != null) {
-      for (tag <- tagList) {
-        _tags += tag
-      }
+      for (tag <- tagList) _tags += tag
     }
   }
 
@@ -196,9 +179,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
   def setErrorResponses(ep: java.util.List[DocumentationError]) = {
     this._errorResponses.clear()
     if (ep != null) {
-      for (n <- ep) {
-        _errorResponses += n
-      }
+      for (n <- ep) _errorResponses += n
     }
   }
 
@@ -383,9 +364,7 @@ class DocumentationObject extends Name {
   def setFields(ep: java.util.List[DocumentationParameter]) = {
     this.fields.clear()
     if (ep != null) {
-      for (n <- ep) {
-        fields += n
-      }
+      for (n <- ep) fields += n
     }
   }
 
@@ -505,5 +484,4 @@ class DocumentationSchema ( ){
 
   @XmlTransient
   val simpleTypeList: List[String] = List("string", "number", "integer", "boolean", "object", "array", "null", "any")
-
 }

@@ -21,7 +21,7 @@ import util.TypeUtil
 
 import org.apache.commons.lang.StringUtils
 
-import javax.ws.rs.core.{UriInfo, HttpHeaders}
+import javax.ws.rs.core.{ UriInfo, HttpHeaders }
 import java.rmi.server.Operation
 
 import scala.collection._
@@ -34,12 +34,11 @@ class HelpApi {
   var apiFilter: AuthorizationFilter = null
 
   def this(apiFilterClassName: String) = {
-    this ()
+    this()
     if (apiFilterClassName != null) {
       try {
         apiFilter = SwaggerContext.loadClass(apiFilterClassName).newInstance.asInstanceOf[AuthorizationFilter]
-      }
-      catch {
+      } catch {
         case e: ClassNotFoundException => LOGGER.error("Unable to resolve apiFilter class " + apiFilterClassName);
         case e: ClassCastException => LOGGER.error("Unable to cast to apiFilter class " + apiFilterClassName);
       }
@@ -50,86 +49,72 @@ class HelpApi {
     //todo: apply auth and filter doc to only those which apply to current request/api-key
     if (apiFilter != null) {
       var apisToRemove = new ListBuffer[DocumentationEndPoint]
-      if(null != doc.getApis()){
-	      doc.getApis().foreach(
-	          api => {
-	            if (api.getOperations() != null){
-	              var operationsToRemove = new ListBuffer[DocumentationOperation]
-	              api.getOperations().foreach( apiOperation  =>
-                  apiFilter match {
-                    case apiAuthFilter:ApiAuthorizationFilter => {
-                      if(!apiAuthFilter.authorize(api.path, apiOperation.httpMethod, headers, uriInfo)){
-                        operationsToRemove += apiOperation
-                      }
-                    }
-                    case fineGrainedApiAuthFilter:FineGrainedApiAuthorizationFilter => {
-                      if(!fineGrainedApiAuthFilter.authorizeOperation(api.path, apiOperation, headers, uriInfo)){
-                        operationsToRemove += apiOperation
-                      }
-                    }
-                    case _ => {}
-                  }
-	              )
-	              for(operation <- operationsToRemove)api.removeOperation(operation)
-	              if(null == api.getOperations() || api.getOperations().size() == 0){
-	                apisToRemove += api
-	              }
-	            }
-	         }
-	      );
-	      for (api <- apisToRemove) doc.removeApi(api)
+      if (null != doc.getApis()) {
+        doc.getApis().foreach(api => {
+          if (api.getOperations() != null) {
+            var operationsToRemove = new ListBuffer[DocumentationOperation]
+            api.getOperations().foreach(apiOperation =>
+              apiFilter match {
+                case apiAuthFilter: ApiAuthorizationFilter => {
+                  if (!apiAuthFilter.authorize(api.path, apiOperation.httpMethod, headers, uriInfo))
+                    operationsToRemove += apiOperation
+                }
+                case filter: FineGrainedApiAuthorizationFilter => {
+                  if (!filter.authorizeOperation(api.path, apiOperation, headers, uriInfo))
+                    operationsToRemove += apiOperation
+                }
+                case _ =>
+              })
+            operationsToRemove.foreach(operation => api.removeOperation(operation))
+            if (null == api.getOperations() || api.getOperations().size() == 0)
+              apisToRemove += api
+          }
+        })
+        apisToRemove.foreach(api => doc.removeApi(api))
       }
     }
-    //todo: transform path?
     loadModel(doc)
     doc
   }
 
-  private def loadModel(d: Documentation): Unit = {
+  private def loadModel(d: Documentation) = {
     val directTypes = getExpectedTypes(d)
     val types = TypeUtil.getReferencedClasses(directTypes)
-    for (t <- types) {
+    types.foreach(t => {
       try {
-        val clazz = SwaggerContext.loadClass(t)
-        val n = ApiPropertiesReader.read(clazz)
+        val c = SwaggerContext.loadClass(t)
+        val n = ApiPropertiesReader.read(c)
         if (null != n && null != n.getFields && n.getFields.length > 0) {
           d.addModel(n)
           d.addSchema(n.getName, n.toDocumentationSchema())
         } else {
-          if(null == n)
-            LOGGER.error("Skipping model " + t + ". Could not load the model.")
-          else
-            if(null == n.getFields || n.getFields.length == 0)
+          if (null == n) LOGGER.error("Skipping model " + t + ". Could not load the model.")
+          else if (null == n.getFields || n.getFields.length == 0)
             LOGGER.error("Skipping model " + t + ". Did not find any public fields or bean-properties in this model. If its a scala class its fields might not have @BeanProperty annotation added to its fields.")
         }
-      }
-      catch {
+      } catch {
         case e: ClassNotFoundException => LOGGER.error("Unable to resolve class " + t);
         case e: Exception => LOGGER.error("Unable to load model documentation for " + t, e)
       }
-    }
+    })
   }
 
   private def getExpectedTypes(d: Documentation): List[String] = {
     val l = new HashSet[String]
     if (d.getApis() != null) {
-      //	endpoints
-      for (n <- d.getApis()) {
-        //	operations
-        for (o <- n.getOperations()) {
+      d.getApis().foreach(n => { // endpoints
+        n.getOperations().foreach(o => { //	operations
           //return types
           if (StringUtils.isNotBlank(o.getResponseTypeInternal())) l += o.getResponseTypeInternal().replaceAll("\\[\\]", "")
           //operation parameters -- for a POST we might have complex types
-          if(o.getParameters() != null) {
-            for (r <- JavaConversions.asIterator((o.getParameters()).iterator())) {
-              //	parameter types
+          if (o.getParameters() != null) {
+            o.getParameters.foreach(r => {
               if (StringUtils.isNotBlank(r.getValueTypeInternal())) l += r.getValueTypeInternal().replaceAll("\\[\\]", "")
-            }
+            })
           }
-        }
-      }
+        })
+      })
     }
     l.toList
   }
-
 }

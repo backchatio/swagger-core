@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Api {
     String value();
+    String listingPath() default "";
+    String listingClass() default "";
     String description() default "";
     boolean open() default false;
 }
