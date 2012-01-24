@@ -55,7 +55,6 @@ trait ApiListing {
     val resources = rc.getRootResourceClasses
     val apiListingEndpoint = this.getClass.getAnnotation(classOf[Api])
     val resourceListingType = this.getClass.getAnnotation(classOf[javax.ws.rs.Produces]).value.toSet
-    println(resourceListingType)
     
     val allApiDoc = new Documentation
     resources.foreach(resource => {
@@ -92,7 +91,6 @@ trait ApiListing {
               resource.getAnnotation(classOf[javax.ws.rs.Produces]).value.toSet
             }
           }
-          println(resourceMediaType)
           
           // nothing found, check produces type
           var hasMatch = false
