@@ -8,8 +8,9 @@ import com.wordnik.swagger.core.ApiOperation._
 import javax.ws.rs._
 import javax.ws.rs.core.Response
 
-class SampleResource {
+class BasicResource {
   @GET
+  @Path("/{id}")
   @ApiOperation(value = "Get object by ID",
     notes = "No details provided",
     responseClass = "com.wordnik.test.swagger.core.testdata.SampleOutput")

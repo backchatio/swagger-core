@@ -7,8 +7,7 @@ import com.wordnik.swagger.core.ApiOperation._
 import javax.ws.rs._
 import javax.ws.rs.core.Response
 
-
-@Path("/sample.json")
-@Api(value = "/sample", description = "Sample resource")
+@Path("/basic.json")
+@Api(value = "/basic", description = "Basic resource")
 @Produces(Array("application/json"))
-class SampleResourceJSON extends SampleResource 
+class BasicResourceJSON extends BasicResource
