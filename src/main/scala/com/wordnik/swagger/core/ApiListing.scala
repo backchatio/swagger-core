@@ -35,7 +35,7 @@ trait ApiListing {
     @Context rc: ResourceConfig,
     @Context headers: HttpHeaders,
     @Context uriInfo: UriInfo): Response = {
-
+    
     val configReader = ConfigReaderFactory.getConfigReader(sc)
     val apiVersion = configReader.getApiVersion()
     val swaggerVersion = configReader.getSwaggerVersion()
@@ -81,7 +81,20 @@ trait ApiListing {
         }
         
         val hasCompatibleMediaType = {
-          val resourceMediaType = resource.getAnnotation(classOf[javax.ws.rs.Produces]).value.toSet
+          // check accept type first
+          val resourceMediaType = {
+            if(headers.getRequestHeaders().contains("Accept")) {
+              logger.debug("using accept headers")
+              headers.getRequestHeaders()("Accept").toSet
+            }
+            else {
+              logger.debug("using produces annotations")
+              resource.getAnnotation(classOf[javax.ws.rs.Produces]).value.toSet
+            }
+          }
+          println(resourceMediaType)
+          
+          // nothing found, check produces type
           var hasMatch = false
           resourceMediaType.foreach(rt => {
             if(resourceListingType.contains(rt)) {
