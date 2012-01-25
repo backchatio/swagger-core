@@ -88,8 +88,13 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
     assert(null == docObj.getFields)
 
     docObj = ApiPropertiesReader.read(classOf[ScalaCaseClass])
-    assert(docObj.getFields.size() == 1)
+    assert(docObj.getFields.size() === 1)
 
+  }
+
+  it should "read properties if attribute is defined as transient in the main class and xml element in the base class " in {
+    var docObj = ApiPropertiesReader.read(classOf[TestTransientWithXMLElementInBaseCLass])
+    assert(docObj.getFields.size() === 1)
   }
 
 }
@@ -377,7 +382,16 @@ case class TestObjectForNoneAnnotation() {
 }
 
 
+@XmlAccessorType(XmlAccessType.NONE)
+trait Id {
+  @XmlElement @BeanProperty var id: String = _
+}
 
-
+@XmlRootElement(name = "TestTransientWithXMLElementInBaseCLass")
+@XmlAccessorType(XmlAccessType.NONE)
+class TestTransientWithXMLElementInBaseCLass extends Id {
+  @XmlTransient
+  override def getId(): String = super.getId()
+}
 
 
