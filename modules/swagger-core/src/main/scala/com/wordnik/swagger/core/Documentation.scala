@@ -77,12 +77,12 @@ class Documentation(@BeanProperty var apiVersion: String,
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
   @XmlElement(name = "models")
-  def getModels(): java.util.Map[String, DocumentationSchema] = models.size() match {
+  def getModels(): java.util.HashMap[String, DocumentationSchema] = models.size() match {
     case 0 => null
     case _ => models
   }
 
-  def setModels(sch: java.util.Map[String, DocumentationSchema]) = {
+  def setModels(sch: java.util.HashMap[String, DocumentationSchema]) = {
     this.models.clear()
     if (sch != null) sch.foreach(schema => models += schema)
   }
