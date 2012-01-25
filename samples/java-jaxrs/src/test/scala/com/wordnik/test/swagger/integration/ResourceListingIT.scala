@@ -9,6 +9,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
+import scala.collection.JavaConversions._
+
 import scala.io._
 
 @RunWith(classOf[JUnitRunner])
@@ -16,6 +18,7 @@ class ResourceListingIT extends FlatSpec with ShouldMatchers {
   it should "read a resource listing" in {
     val json = Source.fromURL("http://localhost:8002/api/resources.json").mkString
     val doc = JsonUtil.getJsonMapper.readValue(json, classOf[Documentation])
-    println(doc)
+    assert(doc.getApis.size == 2)
+    assert((doc.getApis.map(api => api.getPath).toSet & Set("/pet.{format}", "/user.{format}")).size == 0)
   }
 }
