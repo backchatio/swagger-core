@@ -1,45 +1,18 @@
 # Swagger Sample App
 
 ## Overview
-This is a pure java project to build a stand-alone server which implements the Swagger spec.  You can find out 
+This is a java project to build a stand-alone server which implements the Swagger spec.  You can find out 
 more about both the spec and the framework at http://swagger.wordnik.com.  For more information 
 about Wordnik's APIs, please visit http://developer.wordnik.com.  There is an online version of this
 server at http://petstore.swagger.wordnik.com/api/resources.json
 
-### Prerequisites
-You need the following installed and available in your $PATH:
-
-<li>- Java 1.6 or greater (http://java.oracle.com)
-
-<li>- Apache ant 1.7 or greater (http://ant.apache.org/)
-
-<li>- Apachy ivy installed (from swagger-core)
-
-<li>- (optional) Maven 2.2.1 or greater (http://maven.apache.org/)
-
-### To build (with Ant)
-To build the stand-alone server, run this task:
+### To run (with Maven)
+To run the server, run this task:
 <pre>
-ant dist
+mvn package -Dlog4j.configuration=file:./conf/log4j.properties jetty:run
 </pre>
 
-This will resolve all required dependencies (~30MB) including the swagger-core library and store them in
-your local ivy cache.  It will then build a stand-alone server in the "dist" folder which can be run by
-shell script:
-
-<pre>
-cd dist
-./bin/run-dev.sh
-</pre>
-
-This will start Jetty embedded on port 8002 with JDB enabled on port 8015.  If you have other services
-using these ports you can change the HTTP port in the conf/jetty/jetty.xml file.  The JDB port can be
-changed or disabled completely from the bin/run-dev.sh
-
-### To build (with Maven)
-<pre>
-mvn package jetty:run
-</pre>
+This will start Jetty embedded on port 8002.
 
 ### Testing the server
 Once started, you can navigate to http://localhost:8002/api/resources.json to view the Swagger Resource Listing.
