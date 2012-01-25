@@ -1,6 +1,7 @@
 package com.wordnik.test.swagger.jaxrs
 
 import com.wordnik.swagger.core._
+import com.wordnik.swagger.core.util._
 import com.wordnik.swagger.jaxrs._
 
 import com.wordnik.test.swagger.core.testdata._
@@ -37,7 +38,10 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     assert(doc.resourcePath == "/sample")
     assert(doc.getApis.size == 1)
     assert(doc.getModels.size == 1)
-    assert((doc.getModels(0).getFields.map(f => f.name).toSet & Set("theName", "theValue")).size === 2)
+    
+    // verify the "howdy" model
+    val props = doc.getModels().get("Howdy").properties.toMap
+    assert((props.map(key=>key._1).toSet & Set("id", "theName", "theValue")).size == 3)
   }
 
   it should "read a resource class from a listing path" in {
@@ -55,7 +59,9 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     assert(doc.resourcePath === "/sample")
     assert(doc.getApis.size === 1)
     assert(doc.getModels.size === 1)
-    assert((doc.getModels(0).getFields.map(f => f.name).toSet & Set("theName", "theValue")).size === 2)
+
+    val props = doc.getModels().get("Howdy").properties.toMap
+    assert((props.map(key=>key._1).toSet & Set("id", "theName", "theValue")).size == 3)
   }
 
   it should "NOT read a resource class from a listing path" in {
