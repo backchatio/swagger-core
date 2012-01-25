@@ -15,7 +15,9 @@ import org.scalatest.matchers.ShouldMatchers
 import scala.reflect.BeanProperty
 import java.io.ByteArrayInputStream
 import scala.collection.JavaConverters._
-import com.wordnik.swagger.core.{DocumentationParameter, DocumentationObject, ApiPropertiesReader}
+import scala.collection.JavaConversions._
+import com.wordnik.swagger.core._
+import javax.ws.rs._
 
 @RunWith(classOf[JUnitRunner])
 class SpecReaderTest extends FlatSpec with ShouldMatchers {
@@ -33,6 +35,12 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
     var docObj = ApiPropertiesReader.read(classOf[ScalaCaseClass])
     assert(null != docObj.getName)
   }
+
+  it should "read a SimplePojo with XMLElement variations" in {
+    var docObj = ApiPropertiesReader.read(classOf[SimplePojo2])
+    assert((docObj.getFields.map(f=>f.name).toSet & Set("testInt","testString")).size === 2)
+  }
+
 
   it should "read different data types properly " in {
     var docObj = ApiPropertiesReader.read(classOf[SampleDataTypes])
@@ -57,13 +65,109 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
         case "intProperty" => assert(field.paramType === "int");assertedFields += 1;
         case "label" => assert(field.paramType === "string"); assertedFields += 1;
         case "transientFieldSerializedGetter" => assert(field.paramType === "string"); assertedFields += 1;
-
         case _ =>
       }
     }
     assert(assertedFields === 4)
+
   }
+
+  it should "not create any model properties to default method like get class " in {
+    var docObj = ApiPropertiesReader.read(classOf[ExtendedClass])
+    var assertedFields = 0;
+    for(field <- docObj.getFields.asScala){
+      field.name match {
+        case "class" => assert(false, "should not have class property in model object");
+        case _ =>
+      }
+    }
+  }
+
+  it should "only read properties with XMLElement annotation if model object has XmlAccessType type NONE  annotation " in {
+    var docObj = ApiPropertiesReader.read(classOf[TestObjectForNoneAnnotation])
+    assert(null == docObj.getFields)
+
+    docObj = ApiPropertiesReader.read(classOf[ScalaCaseClass])
+    assert(docObj.getFields.size() == 1)
+
+  }
+
 }
+
+@RunWith(classOf[JUnitRunner])
+class ResourceReaderTest extends FlatSpec with ShouldMatchers {
+  behavior of "resource reader"
+
+  it should "handle APIs that take array collection as post object" in {
+    var doc = ApiReader.read(classOf[TestResourceJSON], "1.0", "1.0", "test", "apitest");
+    var params = doc.getApis().get(0).getOperations().get(0).getParameters();
+    var totalAssertions = 0;
+    for (param <- params.asScala) {
+      param.getName() match {
+        case "users" =>
+        case _ => {
+          assert(param.getDataType() === "Array[java.lang.String]")
+          assert(param.getValueTypeInternal() === "java.lang.String");
+          totalAssertions += 1;
+        }; //this mean it is post param hence no name
+      }
+    }
+    assert(totalAssertions  === 1)
+  }
+
+  it should "handle apis that return collection objects " in {
+    var doc = ApiReader.read(classOf[TestResourceJSON], "1.0", "1.0", "test", "apitest");
+    var operation = doc.getApis().get(1).getOperations().get(0);
+    assert(operation.getResponseTypeInternal() === "java.lang.String")
+    assert(operation.getResponseClass() === "List[string]")
+  }
+
+  it should "handle APIs that take list collection as post object" in {
+    var doc = ApiReader.read(classOf[TestResourceJSON], "1.0", "1.0", "test", "apitest");
+    var params = doc.getApis().get(1).getOperations().get(0).getParameters();
+    var totalAssertions = 0;
+    for (param <- params.asScala) {
+      param.getName() match {
+        case "users" =>
+        case _ => {
+          assert(param.getDataType() === "List[string]")
+          assert(param.getValueTypeInternal() === "string");
+          totalAssertions += 1;
+        }; //this mean it is post param hence no name
+      }
+    }
+    assert(totalAssertions  === 1)
+  }
+
+}
+
+@Path("/pet.json")
+@Api(value = "/pet", description = "Operations about pets")
+@Produces(Array("application/json"))
+class TestResourceJSON {
+
+  @POST
+  @Path("/path1")
+  @ApiOperation(value = "Sample operation that takes arry input")
+  @ApiErrors(Array(new ApiError(code = 400, reason = "Invalid ID supplied"),
+    new ApiError(code = 404, reason = "Pet not found"),
+    new ApiError(code = 405, reason = "Validation exception") ))
+  def testMethod1(@ApiParam(value = "List of users", required = true)users : Array[String]):String = {
+    return "";
+  }
+
+  @POST
+  @Path("/path2")
+  @ApiOperation(value = "Sample operation that takes arry input", responseClass = "java.lang.String", multiValueResponse = true)
+  @ApiErrors(Array(new ApiError(code = 400, reason = "Invalid ID supplied"),
+    new ApiError(code = 404, reason = "Pet not found"),
+    new ApiError(code = 405, reason = "Validation exception") ))
+  def testMethod2(@ApiParam(value = "List of users", required = true)users : java.util.List[String]):String = {
+    return "";
+  }
+
+}
+
 
 @RunWith(classOf[JUnitRunner])
 class JaxbSerializationTest extends FlatSpec with ShouldMatchers {
@@ -119,6 +223,24 @@ class JaxbSerializationTest extends FlatSpec with ShouldMatchers {
     assert(p.testInt == 5)
   }
 
+  it should "serialize a ExtendedClass" in {
+    val ctx = JAXBContext.newInstance(classOf[ExtendedClass]);
+    var m = ctx.createMarshaller()
+    val e = new ExtendedClass
+    e.setTransientFieldSerializedGetter("Field1")
+    e.setLabel("Field2")
+    e.setStringProperty("Field3")
+    m.marshal(e, System.out)
+  }
+
+  it should "serialize a TestObjectForNoneAnnotation with no xml element annotations" in {
+    val ctx = JAXBContext.newInstance(classOf[TestObjectForNoneAnnotation]);
+    var m = ctx.createMarshaller()
+    val e = new TestObjectForNoneAnnotation
+    e.setTestString("test String")
+    m.marshal(e, System.out)
+  }
+
 }
 
 @RunWith(classOf[JUnitRunner])
@@ -162,7 +284,7 @@ class JsonSerializationTest extends FlatSpec with ShouldMatchers {
 @XmlRootElement(name= "BaseClass")
 class BaseClass {
   @BeanProperty var stringProperty:String = _
-  @BeanProperty var IntProperty:Int = _
+  @BeanProperty var intProperty:Int = _
 
   @XmlTransient
   var label:String =_
@@ -213,6 +335,16 @@ class SimplePojo {
 
 }
 
+@XmlRootElement(name = "simplePojo2")
+@XmlAccessorType(XmlAccessType.NONE)
+class SimplePojo2 {
+  @XmlElement(name = "testInt")
+  var te: Int = 1
+
+  @XmlElement(name = "testString")
+  var ts: String = _
+}
+
 @XmlRootElement(name = "scalaishPojo")
 @XmlAccessorType(XmlAccessType.NONE)
 class ScalaPojo {
@@ -231,6 +363,17 @@ case class ScalaCaseClass() {
   @XmlTransient
   @BeanProperty
   var testTransient:List[String] = _
+}
+
+
+@XmlRootElement(name = "TestObjectForNoneAnnotation")
+@XmlAccessorType(XmlAccessType.NONE)
+case class TestObjectForNoneAnnotation() {
+  @BeanProperty
+  var testInt = 0
+
+  @BeanProperty
+  var testString:String = _
 }
 
 

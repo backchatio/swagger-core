@@ -32,6 +32,7 @@ import javax.xml.bind.annotation._
 import scala.collection.JavaConversions._
 import collection.mutable.ListBuffer
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
+import java.util.ArrayList
 
 object ApiReader {
   val GET = "GET";
@@ -215,6 +216,7 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
       // Read the params and add to Operation
       val paramAnnotationDoubleArray = method.getParameterAnnotations
       val paramTypes = method.getParameterTypes
+      val genericParamTypes = method.getGenericParameterTypes
       var counter = 0;
       var ignoreParam = false;
       for (paramAnnotations <- paramAnnotationDoubleArray) {
@@ -224,10 +226,11 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
         // determine value type
         try {
           val paramTypeClass = paramTypes(counter)
-          val paramTypeName = ApiPropertiesReader.readName(paramTypeClass)
+          val paramTypeName = ApiPropertiesReader.getDataType(genericParamTypes(counter), paramTypeClass);
+
           docParam.dataType = paramTypeName
-          if(!paramTypeClass.isPrimitive && !paramTypeClass.getName().contains("java.lang")){
-            docParam.setValueTypeInternal(paramTypeClass.getName)
+          if(!paramTypeClass.isPrimitive && !paramTypeClass.getName().startsWith("java.lang")){
+            docParam.setValueTypeInternal(ApiPropertiesReader.getGenericTypeParam(genericParamTypes(counter), paramTypeClass))
           }
         }
         catch {
@@ -369,19 +372,83 @@ object ApiPropertiesReader {
   def readName(hostClass: Class[_]): String = {
     new ApiModelParser(hostClass).readName(hostClass)
   }
+
+  def getDataType(genericReturnType: Type, returnType: Type):String = {
+    var paramType:String = null
+    if (TypeUtil.isParameterizedList(genericReturnType)) {
+      val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+      val valueType = parameterizedType.getActualTypeArguments.head
+      paramType = "List[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
+    } else if (TypeUtil.isParameterizedSet(genericReturnType)) {
+      val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+      val valueType = parameterizedType.getActualTypeArguments.head
+      paramType = "Set[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
+    } else if (TypeUtil.isParameterizedMap(genericReturnType)) {
+      val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+      val typeArgs = parameterizedType.getActualTypeArguments
+      val keyType = typeArgs(0)
+      val valueType = typeArgs(1)
+
+      val keyName = readName(keyType.asInstanceOf[Class[_]])
+      val valueName = readName(valueType.asInstanceOf[Class[_]])
+      paramType = "Map[" + keyName + "," + valueName + "]"
+    } else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.asInstanceOf[Class[_]].isArray) {
+      var arrayClass= returnType.asInstanceOf[Class[_]].getComponentType
+      paramType = "Array[" + arrayClass.getName + "]"
+    } else {
+      //we might also have properties that are parametarized by not assignable to java collections. Examples: Scala collections
+      ///This step will ignore all those fields.
+      if (!genericReturnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl])){
+        paramType = readName(genericReturnType.asInstanceOf[Class[_]])
+      }
+    }
+    paramType
+  }
+
+  def getGenericTypeParam(genericReturnType: Type, returnType: Type):String = {
+    var typeParam:String = null
+    if (TypeUtil.isParameterizedList(genericReturnType) ||
+      TypeUtil.isParameterizedSet(genericReturnType)) {
+      val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+      val valueType = parameterizedType.getActualTypeArguments.head
+      typeParam = readName(valueType.asInstanceOf[Class[_]])
+    } else if (TypeUtil.isParameterizedMap(genericReturnType)) {
+      val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
+      val typeArgs = parameterizedType.getActualTypeArguments
+      val keyType = typeArgs(0)
+      val valueType = typeArgs(1)
+
+      val keyName = readName(keyType.asInstanceOf[Class[_]])
+      val valueName = readName(valueType.asInstanceOf[Class[_]])
+      typeParam = "Map[" + keyName + "," + valueName + "]"
+    } else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.asInstanceOf[Class[_]].isArray) {
+      var arrayClass= returnType.asInstanceOf[Class[_]].getComponentType
+      typeParam = arrayClass.getName
+    } else {
+      //we might also have properties that are parametarized by not assignable to java collections. Examples: Scala collections
+      ///This step will ignore all those fields.
+      if (!genericReturnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl])){
+        typeParam = readName(genericReturnType.asInstanceOf[Class[_]])
+      }
+    }
+    typeParam
+  }
 }
 
 private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
   private val documentationObject = new DocumentationObject
   private val LOGGER = LoggerFactory.getLogger(classOf[ApiModelParser])
-
+  var hasAccessorNoneAnnotation = false;
   documentationObject.setName(readName(hostClass))
 
   private val xmlElementTypeMethod = classOf[XmlElement].getDeclaredMethod("type")
+  private val processedFields:java.util.List[String] = new java.util.ArrayList[String]()
 
   def readName(hostClass: Class[_]): String = {
     val xmlRootElement = hostClass.getAnnotation(classOf[XmlRootElement])
     val xmlEnum = hostClass.getAnnotation(classOf[XmlEnum])
+    val accessorNone = hostClass.getAnnotation(classOf[XmlAccessorType]).asInstanceOf[XmlAccessorType]
+    if (null != accessorNone && (accessorNone.value() == XmlAccessType.NONE)) hasAccessorNoneAnnotation = true;
 
     if (xmlEnum != null && xmlEnum.value() != null) {
       readName(xmlEnum.value())
@@ -444,7 +511,7 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
       methodFieldName.length > 2) {
       methodFieldName.substring(2, 3).toLowerCase() + methodFieldName.substring(3, methodFieldName.length())
     } else {
-      null
+      methodFieldName
     }
   }
 
@@ -455,33 +522,84 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
     docParam.required = false;
 
     var isTransient = false;
-    var hasElementAnnotation = false;
+    var isXmlElement = false;
+    var isFieldExists = false;
 
-    for (ma <- methodAnnotations) {
+    var methodAnnoOutput = processAnnotations(name, methodAnnotations, docParam)
+    isTransient = methodAnnoOutput._1
+    isXmlElement = methodAnnoOutput._2
+
+    try {
+      val propertyAnnotations = getDeclaredField(this.hostClass, name).getAnnotations()
+      var propAnnoOutput = processAnnotations(name, propertyAnnotations, docParam)
+      isFieldExists = true;
+      if (!isXmlElement){isXmlElement = propAnnoOutput._2}
+      if (!isTransient){isTransient = propAnnoOutput._1}
+    } catch {
+      //this means there is no field declared to look for field level annotations.
+      case e: java.lang.NoSuchFieldException => isTransient = false
+    }
+
+    if (docParam.name == null && name != null)
+      docParam.name = name;
+
+    //if class has accessor none annotation, the method/field should have explicit xml element annotations, if not
+    // consider it as transient
+    if (!isXmlElement && hasAccessorNoneAnnotation){
+      isTransient = true;
+    }
+    
+    if (!(isTransient && !isXmlElement) && docParam.name != null && isFieldExists) {
+      if (docParam.paramType == null) {
+        docParam.paramType = ApiPropertiesReader.getDataType(genericReturnType, returnType)
+      }
+      if (!"void".equals(docParam.paramType) && null != docParam.paramType && !processedFields.contains(docParam.getName()))
+        documentationObject.addField(docParam)
+        processedFields.add(docParam.getName())
+    }
+  }
+
+  /**
+   * Incase of subclass and super class scenario, for properties defined at base class we need to get the super class
+   * and find the fields.
+   */
+  private def getDeclaredField(inputClass:Class[_], fieldName:String):Field = {
+    try{
+      return inputClass.getDeclaredField(fieldName)
+    }catch{
+      case t:NoSuchFieldException =>  {
+        if (inputClass.getSuperclass != null && inputClass.getSuperclass.getName != "Object"){
+          return getDeclaredField(inputClass.getSuperclass, fieldName)
+        }else{
+          throw t;
+        }
+      }
+    }
+  }
+  private def processAnnotations(name:String, annotations: Array[Annotation], docParam:DocumentationParameter):(Boolean, Boolean) = {
+    var isTransient = false
+    var isXmlElement = false
+    for (ma <- annotations) {
       ma match {
         case xmlTransient: XmlTransient => {
-          isTransient = true;
-        };
-
+          isTransient = true
+        }
         case apiProperty: ApiProperty => {
           docParam.description = readString(apiProperty.value)
           docParam.notes = readString(apiProperty.notes)
-          try{
+          try {
             docParam.allowableValues = convertToAllowableValues(apiProperty.allowableValues)
-          }catch{
+          } catch {
             case e: RuntimeException => LOGGER.error("Allowable values annotation is wrong in for parameter " + docParam.name); e.printStackTrace();
           }
           docParam.paramAccess = readString(apiProperty.access)
-        };
-
+        }
         case xmlAttribute: XmlAttribute => {
           docParam.name = readString(xmlAttribute.name, docParam.name, "##default")
           docParam.name = readString(name, docParam.name)
           docParam.required = xmlAttribute.required
-        };
-
+        }
         case xmlElement: XmlElement => {
-          hasElementAnnotation = true;
           docParam.name = readString(xmlElement.name, docParam.name, "##default")
           docParam.name = readString(name, docParam.name)
           docParam.defaultValue = readString(xmlElement.defaultValue, docParam.defaultValue, "\u0000")
@@ -489,73 +607,15 @@ private class ApiModelParser(val hostClass: Class[_]) extends BaseApiParser {
           docParam.required = xmlElement.required
           val typeValueObj = xmlElementTypeMethod.invoke(xmlElement)
           val typeValue = if (typeValueObj == null) null else typeValueObj.asInstanceOf[Class[_]]
-          //          docParam.paramType = readString(if (typeValue != null) typeValue.getName else null, docParam.paramType)
-        };
-
+          isXmlElement = true
+          // docParam.paramType = readString(if (typeValue != null) typeValue.getName else null, docParam.paramType)
+        }
         case xmlElementWrapper: XmlElementWrapper => {
           docParam.wrapperName = readString(xmlElementWrapper.name, docParam.wrapperName, "##default")
-        };
-
+        }
         case _ => Unit
-
       }
     }
-
-    //sometimes transient annotation is defined on property, so while looking at getter and setter make sure there is
-    // no transient annotation on property if there is no XMLElement annotation
-    if(!isTransient && null != name && !hasElementAnnotation){
-      try{
-        val propertyAnnotations = this.hostClass.getDeclaredField(name).getAnnotations()
-        for( pa <- propertyAnnotations){
-          pa match {
-            case xmlTransient: XmlTransient => {
-              isTransient = true;
-            };
-            case _ => Unit
-          }
-        }
-      }catch{
-        //this means there is no field declared to look for field level annotations.
-        case e:java.lang.NoSuchFieldException => isTransient = false;
-      }
-    }
-
-    if (docParam.name == null && name != null)
-      docParam.name = name;
-
-    if (!isTransient && docParam.name != null) {
-      if (docParam.paramType == null) {
-        if (TypeUtil.isParameterizedList(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val valueType = parameterizedType.getActualTypeArguments.head
-          docParam.paramType = "List[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
-        } else if (TypeUtil.isParameterizedSet(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val valueType = parameterizedType.getActualTypeArguments.head
-          docParam.paramType = "Set[" + readName(valueType.asInstanceOf[Class[_]]) + "]"
-        } else if (TypeUtil.isParameterizedMap(genericReturnType)) {
-          val parameterizedType = genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType]
-          val typeArgs = parameterizedType.getActualTypeArguments
-          val keyType = typeArgs(0)
-          val valueType = typeArgs(1)
-
-          val keyName = readName(keyType.asInstanceOf[Class[_]])
-          val valueName = readName(valueType.asInstanceOf[Class[_]])
-          docParam.paramType = "Map[" + keyName + "," + valueName + "]"
-        } else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.asInstanceOf[Class[_]].isArray) {
-          var arrayClass= returnType.asInstanceOf[Class[_]].getComponentType
-          docParam.paramType = "Array[" + arrayClass.getName + "]"
-        } else {
-          //we might also have properties that are parametarized by not assignable to java collections. Examples: Scala collections
-          ///This step will ignore all those fields.
-          if (!genericReturnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl])){
-            docParam.paramType = readName(genericReturnType.asInstanceOf[Class[_]])
-          }
-        }
-      }
-
-      if (!"void".equals(docParam.paramType))
-        documentationObject.addField(docParam)
-    }
+    (isTransient, isXmlElement)
   }
 }
