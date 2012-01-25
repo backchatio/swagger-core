@@ -1,13 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
 	<parent>
 		<groupId>com.wordnik</groupId>
 		<artifactId>wordnik-swagger-project</artifactId>
 		<version>1.1-SNAPSHOT.120124</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.wordnik</groupId>
 	<artifactId>swagger-scala-sample-app</artifactId>
@@ -46,6 +44,18 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.mortbay.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
 				<version>${jetty.maven.version}</version>
@@ -65,40 +75,51 @@
 						</connector>
 					</connectors>
 				</configuration>
+				<executions>
+					<execution>
+						<id>start-jetty</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<scanIntervalSeconds>0</scanIntervalSeconds>
+							<daemon>true</daemon>
+						</configuration>
+					</execution>
+					<execution>
+						<id>stop-jetty</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
-	<repositories>
-		<repository>
-			<id>oss.sonatype.org</id>
-			<url>http://oss.sonatype.org/content/repositories/releases</url>
-		</repository>
-		<repository>
-			<id>oss.sonatype.org-snapshot</id>
-			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
-		</repository>
-		<repository>
-			<id>codehaus</id>
-			<name>repository.codehaus.org</name>
-			<url>http://repository.codehaus.org</url>
-		</repository>
-	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>swagger-jaxrs_2.8.1</artifactId>
 			<version>${swagger-jaxrs.version}</version>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>${slf4j.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.scalatest</groupId>
+			<artifactId>scalatest_2.8.1</artifactId>
+			<version>${scala-test-version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<properties>
 		<jetty.maven.version>7.1.6.v20100715</jetty.maven.version>
 		<swagger-jaxrs.version>${pom.version}</swagger-jaxrs.version>
 		<slf4j.version>1.6.3</slf4j.version>
+		<scala-test-version>1.5.RC3</scala-test-version>
 	</properties>
 </project>
