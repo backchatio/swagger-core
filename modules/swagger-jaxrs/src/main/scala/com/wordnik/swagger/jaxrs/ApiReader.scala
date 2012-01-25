@@ -17,6 +17,7 @@
 package com.wordnik.swagger.jaxrs
 
 import com.wordnik.swagger.core._
+import com.wordnik.swagger.core.util._
 import com.wordnik.swagger.core.ApiValues._
 import com.wordnik.swagger.core.util.TypeUtil
 
@@ -46,10 +47,10 @@ object ApiReader {
   val LIST_RESOURCES_PATH = "/resources"
 
   private val endpointsCache = scala.collection.mutable.Map.empty[Class[_], Documentation]
-  
-  def setFormatString(str:String) = {
+
+  def setFormatString(str: String) = {
     LOGGER.debug("setting format string")
-    if(FORMAT_STRING != str) {
+    if (FORMAT_STRING != str) {
       LOGGER.debug("clearing endpoint cache")
       endpointsCache.clear
       FORMAT_STRING = str
@@ -82,9 +83,11 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
   val apiEndpoint = hostClass.getAnnotation(classOf[Api])
 
   def parse(): Documentation = {
-    if (apiEndpoint != null) {
-      for (method <- hostClass.getMethods) parseMethod(method)
-    }
+    LOGGER.debug("#####################################")
+    LOGGER.debug(JsonUtil.getJsonMapper.writeValueAsString(documentation))
+    if (apiEndpoint != null)
+      hostClass.getMethods.foreach(method => parseMethod(method))
+    LOGGER.debug(JsonUtil.getJsonMapper.writeValueAsString(documentation))
     documentation.apiVersion = apiVersion
     documentation.swaggerVersion = swaggerVersion
     documentation.basePath = basePath
@@ -133,8 +136,8 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
     val apiErrors = method.getAnnotation(classOf[ApiErrors])
     val isDeprecated = method.getAnnotation(classOf[Deprecated])
 
+    LOGGER.debug("parsing method " + method.getName)
     if (apiOperation != null && method.getName != "getHelp") {
-
       // Read the Operation
       val docOperation = new DocumentationOperation
 
@@ -267,6 +270,7 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
 
       // Add Operation to Endpoint
       docEndpoint.addOperation(processOperation(method, docOperation))
+      LOGGER.debug("added operation " + docOperation + " from method " + method.getName)
 
       // Read the Errors and add to Response
       if (apiErrors != null) {
@@ -277,7 +281,7 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
           docOperation.addErrorResponse(docError)
         }
       }
-    }
+    } else LOGGER.debug("skipping method " + method.getName)
   }
 
   protected def processOperation(method: Method, o: DocumentationOperation) = o
