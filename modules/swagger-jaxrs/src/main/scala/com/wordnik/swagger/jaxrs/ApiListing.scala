@@ -119,16 +119,19 @@ trait ApiListing {
         if (!hasCompatibleMediaType) logger.debug("no compatible media types")
 
         if (shouldAddDocumentation && hasCompatibleMediaType) {
+          // need to use the actual path (wsPath.value), not the listing path (wsPath.path)
+          val realPath = wsPath.value
+          logger.debug(path + ", " + wsPath.value)
           var api = new DocumentationEndPoint(path, wsPath.description())
           if (!isApiAdded(allApiDoc, api)) {
             if (null != apiFilter) {
               apiFilter match {
                 case apiAuthFilter: ApiAuthorizationFilter => {
-                  if (apiAuthFilter.authorizeResource(api.path, headers, uriInfo))
+                  if (apiAuthFilter.authorizeResource(realPath, headers, uriInfo))
                     allApiDoc.addApi(api)
                 }
                 case fineGrainedApiAuthFilter: FineGrainedApiAuthorizationFilter => {
-                  if (fineGrainedApiAuthFilter.authorizeResource(api.path, api, headers, uriInfo))
+                  if (fineGrainedApiAuthFilter.authorizeResource(realPath, api, headers, uriInfo))
                     allApiDoc.addApi(api)
                 }
                 case _ =>

@@ -42,10 +42,19 @@ object ApiReader {
   val POST = "POST"
   val HEAD = "HEAD"
 
-  val FORMAT_STRING = ".{format}"
+  var FORMAT_STRING = ".{format}"
   val LIST_RESOURCES_PATH = "/resources"
 
   private val endpointsCache = scala.collection.mutable.Map.empty[Class[_], Documentation]
+  
+  def setFormatString(str:String) = {
+    LOGGER.debug("setting format string")
+    if(FORMAT_STRING != str) {
+      LOGGER.debug("clearing endpoint cache")
+      endpointsCache.clear
+      FORMAT_STRING = str
+    }
+  }
 
   def read(hostClass: Class[_], apiVersion: String, swaggerVersion: String, basePath: String, apiPath: String): Documentation = {
     LOGGER.debug("reading path " + apiPath)
