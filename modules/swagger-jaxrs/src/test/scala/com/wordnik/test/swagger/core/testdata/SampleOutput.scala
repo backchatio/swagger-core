@@ -10,7 +10,6 @@ import scala.reflect.BeanProperty
 @XmlRootElement (name="howdy")
 @XmlAccessorType(XmlAccessType.NONE)
 class SampleOutput {
-
   @XmlElement(name="id", required=true)
   @ApiProperty(value = "unique identifier", allowableValues = "available,pending,sold")
   @BeanProperty var id: String = _

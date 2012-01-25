@@ -80,7 +80,7 @@ trait Help {
 object ConfigReaderFactory {
   def getConfigReader(sc: ServletConfig): ConfigReader = {
     var configReaderStr = {
-      if (sc.getInitParameter("swagger.config.reader") == null) "com.wordnik.swagger.core.ConfigReader"
+      if (sc.getInitParameter("swagger.config.reader") == null) "com.wordnik.swagger.jaxrs.ConfigReader"
       else sc.getInitParameter("swagger.config.reader")
     }
     val constructor = SwaggerContext.loadClass(configReaderStr).getConstructor(classOf[ServletConfig])
