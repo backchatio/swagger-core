@@ -61,7 +61,7 @@ class Documentation(@BeanProperty var apiVersion: String,
 
   def addApi(ep: DocumentationEndPoint) = if (ep != null) apis += ep
   def removeApi(ep: DocumentationEndPoint) = if (ep != null) apis -= ep
-
+  /*
   private var objs = new ListBuffer[DocumentationObject]
 
   @JsonIgnore
@@ -72,30 +72,31 @@ class Documentation(@BeanProperty var apiVersion: String,
   }
 
   def addModel(obj: DocumentationObject) = if (obj != null) this.objs += obj
-
-  private var schemas = new java.util.HashMap[String, DocumentationSchema]
+*/
+  private var models = new java.util.HashMap[String, DocumentationSchema]
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
   @XmlElement(name = "models")
-  def getSchemas(): java.util.Map[String, DocumentationSchema] = schemas.size() match {
+  def getModels(): java.util.Map[String, DocumentationSchema] = models.size() match {
     case 0 => null
-    case _ => schemas
+    case _ => models
   }
 
-  def setSchemas(sch: java.util.Map[String, DocumentationSchema]) = {
-    this.schemas.clear()
-    if (sch != null) sch.foreach(schema => schemas += schema)
+  def setModels(sch: java.util.Map[String, DocumentationSchema]) = {
+    this.models.clear()
+    if (sch != null) sch.foreach(schema => models += schema)
   }
 
-  def addSchema(propertyName: String, obj: DocumentationSchema) = {
+  def addModel(propertyName: String, obj: DocumentationSchema) = {
     //the property name is some times studely and some times lower, so make sure it is always sutdely
-    if (propertyName != null && obj != null) schemas += propertyName.capitalize -> obj
+    if (propertyName != null && obj != null) models += propertyName.capitalize -> obj
   }
 
   override def clone(): Object = {
     var doc = new Documentation(apiVersion, swaggerVersion, basePath, resourcePath)
     apis.foreach(ep => doc.addApi((ep.clone()).asInstanceOf[DocumentationEndPoint]))
-    objs.foreach(obj => doc.addModel((obj.clone()).asInstanceOf[DocumentationObject]))
+    for ((name, model) <- models) doc.addModel(name, (model.clone().asInstanceOf[DocumentationSchema]))
+    //    objs.foreach(obj => doc.addModel((obj.clone()).asInstanceOf[DocumentationObject]))
     doc
   }
 }
@@ -123,7 +124,7 @@ class DocumentationEndPoint(@BeanProperty var path: String, @BeanProperty var de
 
   override def clone(): Object = {
     var ep = new DocumentationEndPoint(path, description)
-    ops.foreach(op=> ep.addOperation((op.clone()).asInstanceOf[DocumentationOperation]))
+    ops.foreach(op => ep.addOperation((op.clone()).asInstanceOf[DocumentationOperation]))
     ep
   }
 }
@@ -152,7 +153,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
 
   def setParameters(ep: java.util.List[DocumentationParameter]) = {
     this.parameters.clear()
-    if (ep != null) ep.foreach(n=>parameters += n)
+    if (ep != null) ep.foreach(n => parameters += n)
   }
   def addParameter(param: DocumentationParameter) = parameters += param
 
@@ -186,7 +187,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
 
   def setErrorResponses(ep: java.util.List[DocumentationError]) = {
     this.errorResponses.clear()
-    if (ep != null) ep.foreach(n=>errorResponses += n)
+    if (ep != null) ep.foreach(n => errorResponses += n)
   }
 
   def addErrorResponse(error: DocumentationError) = if (error != null) errorResponses += error
@@ -199,8 +200,8 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
     cloned.responseTypeInternal = this.responseTypeInternal
     cloned.setTags(this.tags)
 
-    parameters.foreach(p=>cloned.addParameter((p.clone()).asInstanceOf[DocumentationParameter]))
-    errorResponses.foreach(er=> cloned.addErrorResponse((er.clone()).asInstanceOf[DocumentationError]))
+    parameters.foreach(p => cloned.addParameter((p.clone()).asInstanceOf[DocumentationParameter]))
+    errorResponses.foreach(er => cloned.addErrorResponse((er.clone()).asInstanceOf[DocumentationError]))
     cloned
   }
 
@@ -213,7 +214,7 @@ class DocumentationOperation(@BeanProperty var httpMethod: String,
     cloned.setTags(this.tags)
     cloned.setErrorResponses(this.errorResponses)
 
-    parameters.foreach(p=>{
+    parameters.foreach(p => {
       if ("internal" != p.paramAccess) cloned.addParameter((p.clone()).asInstanceOf[DocumentationParameter])
     })
     cloned
@@ -286,7 +287,7 @@ class DocumentationAllowableListValues(@BeanProperty var values: java.util.List[
   var valueType: String = LIST_ALLOWABLE_VALUES
 
   def this() = this(null)
-  override def clone(): Object =  new DocumentationAllowableListValues(values)
+  override def clone(): Object = new DocumentationAllowableListValues(values)
 }
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -317,7 +318,6 @@ class DocumentationResponse(
   def getValueTypeInternal() = this.valueTypeInternal
   def setValueTypeInternal(s: String) = this.valueTypeInternal = s
 
-
   private var errorResponses = new ListBuffer[DocumentationError]
 
   @XmlElement
@@ -327,7 +327,7 @@ class DocumentationResponse(
   }
   def setErrorResponses(ep: java.util.List[DocumentationError]) = {
     this.errorResponses.clear()
-    if (ep != null) ep.foreach(n=>errorResponses += n)
+    if (ep != null) ep.foreach(n => errorResponses += n)
   }
 
   def addErrorResponse(error: DocumentationError) = if (error != null) errorResponses += error
@@ -335,7 +335,7 @@ class DocumentationResponse(
   override def clone(): Object = {
     var cloned = new DocumentationResponse(valueType, occurs)
     cloned.valueTypeInternal = this.valueTypeInternal
-    errorResponses.foreach(er=>cloned.addErrorResponse((er.clone()).asInstanceOf[DocumentationError]))
+    errorResponses.foreach(er => cloned.addErrorResponse((er.clone()).asInstanceOf[DocumentationError]))
     cloned
   }
 }
@@ -364,14 +364,14 @@ class DocumentationObject extends Name {
 
   def setFields(ep: java.util.List[DocumentationParameter]) = {
     this.fields.clear()
-    if (ep != null) ep.foreach(n=> fields += n)
+    if (ep != null) ep.foreach(n => fields += n)
   }
 
   def addField(field: DocumentationParameter) = if (fields != null) fields += field
 
   override def clone(): Object = {
     var cloned = new DocumentationObject()
-    fields.foreach(f=>cloned.addField((f.clone()).asInstanceOf[DocumentationParameter]))
+    fields.foreach(f => cloned.addField((f.clone()).asInstanceOf[DocumentationParameter]))
     cloned
   }
 
@@ -381,7 +381,7 @@ class DocumentationObject extends Name {
 
     if (fields.length > 0) schemaObject.properties = new HashMap[String, DocumentationSchema]() else return null
 
-    fields.foreach(currentField =>{
+    fields.foreach(currentField => {
       val fieldSchema: DocumentationSchema = new DocumentationSchema()
       setSchemaTypeDef(currentField, fieldSchema)
       fieldSchema.required = currentField.required
@@ -426,7 +426,7 @@ class DocumentationObject extends Name {
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_DEFAULT)
 @XmlRootElement(name = "model")
-class DocumentationSchema() {
+class DocumentationSchema {
   private var objectType: String = "any"
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_DEFAULT)
@@ -489,4 +489,26 @@ class DocumentationSchema() {
 
   @XmlTransient
   val simpleTypeList: List[String] = List("string", "number", "integer", "boolean", "object", "array", "null", "any")
+
+  override def clone: Object = {
+    val schema = new DocumentationSchema
+    schema.objectType = objectType
+    schema.required = required
+    schema.name = name
+    schema.id = id
+    schema.properties = new java.util.HashMap[String, DocumentationSchema]
+    // todo: clone
+    schema.allowableValues = allowableValues
+    schema.description = description
+    schema.notes = notes
+    schema.access = access
+    schema.default = default
+    // todo: clone
+    schema.additionalProperties = additionalProperties
+    // todo: clone
+    schema.items = items
+    schema.uniqueItems = uniqueItems
+    schema.ref = ref
+    schema
+  }
 }
