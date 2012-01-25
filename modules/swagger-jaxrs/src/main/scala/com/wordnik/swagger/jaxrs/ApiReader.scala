@@ -19,8 +19,6 @@ package com.wordnik.swagger.jaxrs
 import com.wordnik.swagger.core._
 import com.wordnik.swagger.core.ApiValues._
 import com.wordnik.swagger.core.util.TypeUtil
-import com.wordnik.swagger.jaxrs.ApiReader;
-import com.wordnik.swagger.jaxrs.ApiSpecParser;
 
 import org.slf4j.LoggerFactory
 
