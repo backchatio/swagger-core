@@ -87,21 +87,17 @@ trait ApiListing {
               logger.debug("using content-type headers")
 
               val objs = new scala.collection.mutable.ListBuffer[String]
-              headers.getRequestHeaders()("Content-type").foreach(h => {
-                h.split(",").foreach(str => {
-                  objs += str.trim
-                })
-              })
+              headers.getRequestHeaders()("Content-type").foreach(h =>
+                h.split(",").foreach(str => objs += str.trim)
+              )
               objs.toSet
             } else if (headers.getRequestHeaders().contains("Accept")) {
               logger.debug("using accept headers")
 
               val objs = new scala.collection.mutable.ListBuffer[String]
-              headers.getRequestHeaders()("Accept").foreach(h => {
-                h.split(",").foreach(str => {
-                  objs += str.trim
-                })
-              })
+              headers.getRequestHeaders()("Accept").foreach(h => 
+                h.split(",").foreach(str => objs += str.trim)
+              )
               objs.toSet
             } else {
               logger.debug("using produces annotations")
@@ -111,11 +107,11 @@ trait ApiListing {
 
           // nothing found, check produces type
           var hasMatch = false
-          resourceMediaType.foreach(rt => {
+          resource.getAnnotation(classOf[javax.ws.rs.Produces]).value.foreach(rt => {
             if (resourceListingType.contains(rt)) {
               logger.debug("matched " + rt)
               hasMatch = true
-            } else logger.debug("sorry!  no match on " + rt)
+            } else logger.debug("no match on " + rt)
           })
           hasMatch
         }
