@@ -87,8 +87,7 @@ class HelpApi {
         val c = SwaggerContext.loadClass(t)
         val n = ApiPropertiesReader.read(c)
         if (null != n && null != n.getFields && n.getFields.length > 0) {
-          d.addModel(n)
-          d.addSchema(n.getName, n.toDocumentationSchema())
+          d.addModel(n.getName, n.toDocumentationSchema())
         } else {
           if (null == n) LOGGER.error("Skipping model " + t + ". Could not load the model.")
           else if (null == n.getFields || n.getFields.length == 0)
