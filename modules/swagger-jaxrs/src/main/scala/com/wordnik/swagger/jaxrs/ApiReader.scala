@@ -26,7 +26,7 @@ import javax.ws.rs._
 import core.Context
 import util.ReflectionUtil
 
-import java.lang.reflect.{Type, Field, Modifier, Method}
+import java.lang.reflect.{ Type, Field, Modifier, Method }
 import java.lang.annotation.Annotation
 import javax.xml.bind.annotation._
 
@@ -296,13 +296,12 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
     var ep: DocumentationEndPoint = null
 
     if (documentation.getApis != null)
-      for (endpoint <- asIterable(documentation.getApis)) {
-        if (endpoint.path == path) ep = endpoint
-      }
+      documentation.getApis.foreach(endpoint => if (endpoint.path == path) ep = endpoint)
 
-    ep match {
-      case null => ep = new DocumentationEndPoint(path, apiEndpoint.description); documentation.addApi(ep); ep
-      case _ => ep
-    }
+    if (ep == null) {
+      val o = new DocumentationEndPoint(path, apiEndpoint.description)
+      documentation.addApi(o)
+      o
+    } else ep
   }
 }
