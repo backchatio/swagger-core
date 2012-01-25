@@ -401,47 +401,23 @@
 	</pluginRepositories>
 	<repositories />
 	<dependencies>
-
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>${slf4j-version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j-version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>${commons-lang-version}</version>
-			<scope>provided</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-jaxrs</artifactId>
 			<version>${jackson-version}</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-xc</artifactId>
 			<version>${jackson-version}</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
 			<version>${jackson-version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-library</artifactId>
-			<version>${scala-version}</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.scalatest</groupId>
@@ -449,24 +425,14 @@
 			<version>${scala-test-version}</version>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>${junit-version}</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 	<properties>
 		<maven-javadoc-plugin-version>2.8</maven-javadoc-plugin-version>
-		<servlet-api-version>2.5</servlet-api-version>
 		<maven-scala-plugin-version>2.15.2</maven-scala-plugin-version>
 		<jersey-version>1.7</jersey-version>
 		<jackson-version>1.7.7</jackson-version>
-		<junit-version>4.4</junit-version>
 		<maven-plugin.version>1.0.0</maven-plugin.version>
 		<commons-lang-version>2.4</commons-lang-version>
-		<scala-version>2.8.1</scala-version>
-		<slf4j-version>1.6.1</slf4j-version>
 		<scala-test-version>1.5.RC3</scala-test-version>
 	</properties>
 </project>
