@@ -46,7 +46,7 @@ trait ApiListing {
     var apiFilter: AuthorizationFilter = null
     if (null != apiFilterClassName) {
       try {
-        logger.debug("loading filter class" + apiFilterClassName)
+        logger.debug("loading filter class " + apiFilterClassName)
         apiFilter = SwaggerContext.loadClass(apiFilterClassName).newInstance.asInstanceOf[AuthorizationFilter]
       } catch {
         case e: ClassNotFoundException => logger.error("Unable to resolve apiFilter class " + apiFilterClassName);
@@ -88,16 +88,14 @@ trait ApiListing {
 
               val objs = new scala.collection.mutable.ListBuffer[String]
               headers.getRequestHeaders()("Content-type").foreach(h =>
-                h.split(",").foreach(str => objs += str.trim)
-              )
+                h.split(",").foreach(str => objs += str.trim))
               objs.toSet
             } else if (headers.getRequestHeaders().contains("Accept")) {
               logger.debug("using accept headers")
 
               val objs = new scala.collection.mutable.ListBuffer[String]
-              headers.getRequestHeaders()("Accept").foreach(h => 
-                h.split(",").foreach(str => objs += str.trim)
-              )
+              headers.getRequestHeaders()("Accept").foreach(h =>
+                h.split(",").foreach(str => objs += str.trim))
               objs.toSet
             } else {
               logger.debug("using produces annotations")
@@ -127,12 +125,16 @@ trait ApiListing {
             if (null != apiFilter) {
               apiFilter match {
                 case apiAuthFilter: ApiAuthorizationFilter => {
-                  if (apiAuthFilter.authorizeResource(realPath, headers, uriInfo))
+                  if (apiAuthFilter.authorizeResource(realPath, headers, uriInfo)) {
+                    logger.debug("apiAuthFilter: adding api " + realPath)
                     allApiDoc.addApi(api)
+                  }
                 }
                 case fineGrainedApiAuthFilter: FineGrainedApiAuthorizationFilter => {
-                  if (fineGrainedApiAuthFilter.authorizeResource(realPath, api, headers, uriInfo))
+                  if (fineGrainedApiAuthFilter.authorizeResource(realPath, api, headers, uriInfo)) {
+                    logger.debug("fineGrainedApiAuthFilter: adding api " + realPath)
                     allApiDoc.addApi(api)
+                  }
                 }
                 case _ =>
               }

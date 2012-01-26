@@ -31,6 +31,7 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     val doc = helpApi.filterDocs(ApiReader.read(classOf[BasicResourceJSON], "1.123", "2.345", "http://my.host.com/basepath", "/sample"),
       null,
       null,
+      null,
       null)
     assert(doc.apiVersion == "1.123")
     assert(doc.swaggerVersion == "2.345")
@@ -52,6 +53,7 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     val doc = helpApi.filterDocs(ApiReader.read(loadingClass, "1.123", "2.345", "http://my.host.com/basepath", "/sample"),
       null,
       null,
+      null,
       null)
     assert(doc.apiVersion === "1.123")
     assert(doc.swaggerVersion === "2.345")
@@ -70,6 +72,7 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
     val helpApi = new HelpApi
     // unclear to why we have "resourcePath" of /sample in this, should be detected from the Api object
     val doc = helpApi.filterDocs(ApiReader.read(loadingClass, "1.123", "2.345", "http://my.host.com/basepath", "/sample"),
+      null,
       null,
       null,
       null)

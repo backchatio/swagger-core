@@ -83,11 +83,8 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
   val apiEndpoint = hostClass.getAnnotation(classOf[Api])
 
   def parse(): Documentation = {
-    LOGGER.debug("#####################################")
-    LOGGER.debug(JsonUtil.getJsonMapper.writeValueAsString(documentation))
     if (apiEndpoint != null)
       hostClass.getMethods.foreach(method => parseMethod(method))
-    LOGGER.debug(JsonUtil.getJsonMapper.writeValueAsString(documentation))
     documentation.apiVersion = apiVersion
     documentation.swaggerVersion = swaggerVersion
     documentation.basePath = basePath

@@ -48,7 +48,6 @@ trait Help {
     val filterOutTopLevelApi = true
     val currentApiEndPoint = this.getClass.getAnnotation(classOf[Api])
     if (currentApiEndPoint == null) {
-      //  TODO: handle this
       Response.status(Status.NOT_FOUND).build
     } else {
       val apiPath = {
@@ -71,7 +70,8 @@ trait Help {
         ApiReader.read(listingClass, apiVersion, swaggerVersion, basePath, apiPath),
         headers,
         uriInfo,
-        apiListingPath)
+        apiListingPath,
+        apiPath)
       Response.ok.entity(docs).build
     }
   }

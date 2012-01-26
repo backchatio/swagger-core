@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 
 import javax.servlet.ServletConfig;
 import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.*;
 
 import org.codehaus.jackson.JsonGenerationException;
@@ -34,24 +35,63 @@ public abstract class JavaHelp {
 			@Context ResourceConfig resConfig, @Context HttpHeaders headers,
 			@Context UriInfo uriInfo) throws JsonGenerationException,
 			JsonMappingException, IOException {
+		ConfigReader configReader = ConfigReaderFactory
+				.getConfigReader(servConfig);
 
-        ConfigReader configReader = ConfigReaderFactory.getConfigReader(servConfig);
-        String apiVersion = configReader.getApiVersion();
-        String swaggerVersion = configReader.getSwaggerVersion();
-        String basePath = configReader.getBasePath();
-        String apiFilterClassName = configReader.getApiFilterClassName();
+		String apiVersion = configReader.getApiVersion();
+		String swaggerVersion = configReader.getSwaggerVersion();
+		String basePath = configReader.getBasePath();
+		String apiFilterClassName = configReader.getApiFilterClassName();
 
 		boolean filterOutTopLevelApi = true;
-
 		Api currentApiEndPoint = this.getClass().getAnnotation(Api.class);
-		String currentApiPath = currentApiEndPoint != null && filterOutTopLevelApi ? currentApiEndPoint.value() : null;
 
-		HelpApi helpApi = new HelpApi(apiFilterClassName);
-		System.out.println(this.getClass());
-		Documentation docs = helpApi.filterDocs(ApiReader.read(this.getClass(),
-				apiVersion, swaggerVersion, basePath, currentApiPath), headers,
-				uriInfo, currentApiPath);
-		Response response = Response.ok(docs).build();
-		return response;
+		if (currentApiEndPoint == null) {
+			return Response.status(Status.NOT_FOUND).build();
+		} else {
+			String apiPath;
+
+			if (filterOutTopLevelApi) {
+				apiPath = currentApiEndPoint.value();
+			} else
+				apiPath = null;
+			String apiListingPath;
+			if (filterOutTopLevelApi) {
+				if (!"".equals(currentApiEndPoint.listingPath()))
+					apiListingPath = currentApiEndPoint.listingPath();
+				else
+					apiListingPath = currentApiEndPoint.value();
+			} else
+				apiListingPath = null;
+
+			Class<?> listingClass = this.getClass();
+			if (!"".equals(currentApiEndPoint.listingClass())) {
+				listingClass = SwaggerContext.loadClass(currentApiEndPoint
+						.listingClass());
+			}
+			HelpApi helpApi = new HelpApi(apiFilterClassName);
+			Documentation docs = helpApi
+					.filterDocs(ApiReader.read(listingClass, apiVersion,
+							swaggerVersion, basePath, apiPath), headers,
+							uriInfo, apiListingPath, apiPath);
+			return Response.ok().entity(docs).build();
+		}
+		/*
+		 * Documentation docs =
+		 * helpApi.filterDocs(ApiReader.read(this.getClass(), apiVersion,
+		 * swaggerVersion, basePath, currentApiPath), headers, uriInfo,
+		 * currentApiPath);
+		 * 
+		 * 
+		 * String currentApiPath = currentApiEndPoint != null &&
+		 * filterOutTopLevelApi ? currentApiEndPoint.value() : null;
+		 * 
+		 * HelpApi helpApi = new HelpApi(apiFilterClassName);
+		 * System.out.println(this.getClass()); Documentation docs =
+		 * helpApi.filterDocs(ApiReader.read(this.getClass(), apiVersion,
+		 * swaggerVersion, basePath, currentApiPath), headers, uriInfo,
+		 * currentApiPath); Response response = Response.ok(docs).build();
+		 * return response;
+		 */
 	}
 }
