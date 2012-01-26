@@ -85,9 +85,9 @@ class ApiAuthorizationFilterImpl extends ApiAuthorizationFilter {
 
   private def initialize() = {
     //initialize classes
-    classSecurityAnotations += "/user.{format}" -> false
-    classSecurityAnotations += "/pet.{format}" -> false
-    classSecurityAnotations += "/store.{format}" -> true
+    classSecurityAnotations += "/user" -> false
+    classSecurityAnotations += "/pet" -> false
+    classSecurityAnotations += "/store" -> true
 
     //initialize method security
     methodSecurityAnotations += "GET:/pet.{format}/{petId}" -> false
