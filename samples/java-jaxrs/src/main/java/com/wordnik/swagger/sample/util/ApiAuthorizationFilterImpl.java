@@ -18,6 +18,9 @@ package com.wordnik.swagger.sample.util;
 
 import com.wordnik.swagger.jaxrs.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.HashMap;
 
@@ -39,6 +42,8 @@ import javax.ws.rs.core.*;
  */
 
 public class ApiAuthorizationFilterImpl implements ApiAuthorizationFilter {
+	static Logger logger = LoggerFactory.getLogger(ApiAuthorizationFilterImpl.class);
+
 	boolean isFilterInitialized = false;
 	Map<String, Boolean> methodSecurityAnotations = new HashMap<String, Boolean>();
 	Map<String, Boolean> classSecurityAnotations = new HashMap<String, Boolean>();
@@ -47,30 +52,34 @@ public class ApiAuthorizationFilterImpl implements ApiAuthorizationFilter {
 
 	public boolean authorize(String apiPath, String method,
 			HttpHeaders headers, UriInfo uriInfo) {
+		boolean canAccess = true;
 		String apiKey = uriInfo.getQueryParameters().getFirst("api_key");
 		String mName = method.toUpperCase();
 		if (isPathSecure(mName + ":" + apiPath, false)) {
 			if (securekeyId.equals(apiKey)) {
-				return true;
+				canAccess = true;
 			} else {
-				return false;
+				canAccess = false;
 			}
 		}
-		return true;
+		return canAccess;
 	}
 
 	public boolean authorizeResource(String apiPath, HttpHeaders headers,
 			UriInfo uriInfo) {
+		boolean canAccess = true;
+
 		String apiKey = uriInfo.getQueryParameters().getFirst("api_key");
 		if (isPathSecure(apiPath, true)) {
 			if (securekeyId.equals(apiKey)) {
-				return true;
+				canAccess = true;
 			} else {
-				return false;
+				canAccess = false;
 			}
 		} else {
-			return true;
+			canAccess = true;
 		}
+		return canAccess;
 	}
 
 	private boolean isPathSecure(String apiPath, boolean isResource) {
@@ -92,10 +101,10 @@ public class ApiAuthorizationFilterImpl implements ApiAuthorizationFilter {
 	}
 
 	private void initialize() {
-		// initialize classes
-		classSecurityAnotations.put("/user.{format}", false);
-		classSecurityAnotations.put("/pet.{format}", false);
-		classSecurityAnotations.put("/store.{format}", true);
+	    //initialize classes (no .format here)
+		classSecurityAnotations.put("/user", false);
+		classSecurityAnotations.put("/pet", false);
+		classSecurityAnotations.put("/store", true);
 
 		// initialize method security
 		methodSecurityAnotations.put("GET:/pet.{format}/{petId}", false);
@@ -106,7 +115,7 @@ public class ApiAuthorizationFilterImpl implements ApiAuthorizationFilter {
 		methodSecurityAnotations.put("GET:/store.{format}/order/{orderId}", true);
 		methodSecurityAnotations.put("DELETE:/store.{format}/order/{orderId}", true);
 		methodSecurityAnotations.put("POST:/store.{format}/order", true);
-		methodSecurityAnotations.put("POST:/user.{format}", false);
+		methodSecurityAnotations.put("POST:/user", false);
 		methodSecurityAnotations.put("PUT:/user.{format}/{username}", true);
 		methodSecurityAnotations.put("DELETE:/user.{format}/{username}", true);
 		methodSecurityAnotations.put("GET:/user.{format}/{username}", false);
