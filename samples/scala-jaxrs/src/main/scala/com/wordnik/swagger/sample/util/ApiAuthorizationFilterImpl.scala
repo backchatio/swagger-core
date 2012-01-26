@@ -19,11 +19,13 @@ package com.wordnik.swagger.sample.util
 import com.wordnik.swagger.core.Api
 import com.wordnik.swagger.jaxrs.ApiAuthorizationFilter
 
+import org.slf4j.LoggerFactory
+
 import java.io.File
 import java.util.ArrayList
 import java.net.URLDecoder
 
-import javax.ws.rs.core.{HttpHeaders, UriInfo}
+import javax.ws.rs.core.{ HttpHeaders, UriInfo }
 import javax.ws.rs.Path
 
 import scala.collection.mutable.ListBuffer
@@ -36,66 +38,59 @@ import scala.collection.JavaConversions._
  * If the resource or method is secure then it can only be viewed using a secured api key
  *
  * Note: Objective of this class is not to provide fully functional implementation of authorization filter. This is
- * only a sample demonstration how API authorization filter works. 
+ * only a sample demonstration how API authorization filter works.
  *
  */
 
 class ApiAuthorizationFilterImpl extends ApiAuthorizationFilter {
-  var isFilterInitialized:Boolean = false
-  var methodSecurityAnotations:Map[String, Boolean] =  Map[String, Boolean]()
-  var classSecurityAnotations:Map[String, Boolean] =  Map[String, Boolean]()
+  private val logger = LoggerFactory.getLogger(classOf[ApiAuthorizationFilterImpl])
+
+  var isFilterInitialized: Boolean = false
+  var methodSecurityAnotations: Map[String, Boolean] = Map[String, Boolean]()
+  var classSecurityAnotations: Map[String, Boolean] = Map[String, Boolean]()
   var securekeyId = "special-key"
   var unsecurekeyId = "default-key"
 
-  def authorize(apiPath: String, method:String, headers: HttpHeaders , uriInfo: UriInfo ): Boolean = {
-     var apiKey = uriInfo.getQueryParameters.getFirst("api_key")
-     val mName = method.toUpperCase;
-     if (isPathSecure(mName+":"+apiPath, false)){
-       if (apiKey == securekeyId){
-        return true
-       }else{
-         return false
-       }
-     }
-     true
+  def authorize(apiPath: String, method: String, headers: HttpHeaders, uriInfo: UriInfo): Boolean = {
+    logger.debug("authorizing path " + apiPath)
+    var apiKey = uriInfo.getQueryParameters.getFirst("api_key")
+    val mName = method.toUpperCase;
+    if (isPathSecure(mName + ":" + apiPath, false)) {
+      if (apiKey == securekeyId) return true
+      else return false
+    }
+    true
   }
 
   def authorizeResource(apiPath: String, headers: HttpHeaders, uriInfo: UriInfo): Boolean = {
+    logger.debug("authorizing resource " + apiPath)
     var apiKey = uriInfo.getQueryParameters.getFirst("api_key")
-    if (isPathSecure(apiPath, true)){
-      if (apiKey == securekeyId){
-       return true
-      }else{
-        return false
-      }
-    }else {
-       true
-    }
+    if (isPathSecure(apiPath, true)) {
+      if (apiKey == securekeyId) return true
+      else return false
+    } else
+      true
   }
 
-  private def isPathSecure(apiPath:String, isResource:Boolean):Boolean = {
+  private def isPathSecure(apiPath: String, isResource: Boolean): Boolean = {
+    logger.debug("checking security on path " + apiPath)
     if (!isFilterInitialized.booleanValue()) initialize()
-    if (isResource.booleanValue()){
-      if(classSecurityAnotations.contains(apiPath)){
+    if (isResource.booleanValue()) {
+      if (classSecurityAnotations.contains(apiPath)) {
         classSecurityAnotations.get(apiPath).get
-      }else{
-        false
-      }
-    }else{
-      if(methodSecurityAnotations.contains(apiPath)){
+      } else false
+    } else {
+      if (methodSecurityAnotations.contains(apiPath)) {
         methodSecurityAnotations.get(apiPath).get
-      }else{
-        false
-      }
+      } else false
     }
   }
 
   private def initialize() = {
-
-    //initialize classes
-    classSecurityAnotations += "/user.{format}" -> false
-    classSecurityAnotations += "/pet.{format}" -> false
-    classSecurityAnotations += "/store.{format}" -> true
+    //initialize classes (no .format here)
+    classSecurityAnotations += "/user" -> false
+    classSecurityAnotations += "/pet" -> false
+    classSecurityAnotations += "/store" -> true
 
     //initialize method security
     methodSecurityAnotations += "GET:/pet.{format}/{petId}" -> false
