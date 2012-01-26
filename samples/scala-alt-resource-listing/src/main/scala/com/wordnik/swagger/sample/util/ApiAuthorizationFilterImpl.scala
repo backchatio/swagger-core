@@ -55,29 +55,19 @@ class ApiAuthorizationFilterImpl extends ApiAuthorizationFilter {
     var apiKey = uriInfo.getQueryParameters.getFirst("api_key")
     val mName = method.toUpperCase;
     if (isPathSecure(mName + ":" + apiPath, false)) {
-      if (apiKey == securekeyId) {
-        return true
-      } else {
-        return false
-      }
+      if (apiKey == securekeyId) return true
+      else return false
     }
     true
   }
 
   def authorizeResource(apiPath: String, headers: HttpHeaders, uriInfo: UriInfo): Boolean = {
     var apiKey = uriInfo.getQueryParameters.getFirst("api_key")
-    val canAccess = isPathSecure(apiPath, true) match {
-      case true => {
-        logger.debug("path is secure")
-        apiKey == securekeyId
-      }
-      case false => {
-        logger.debug("path is NOT secure")
-        true
-      }
-    }
-    logger.debug(canAccess + " authorizing " + apiPath + " with headers " + headers)
-    canAccess
+    if (isPathSecure(apiPath, true)) {
+      if (apiKey == securekeyId) return true
+      else return false
+    } else
+      true
   }
 
   private def isPathSecure(apiPath: String, isResource: Boolean): Boolean = {
@@ -85,23 +75,19 @@ class ApiAuthorizationFilterImpl extends ApiAuthorizationFilter {
     if (isResource.booleanValue()) {
       if (classSecurityAnotations.contains(apiPath)) {
         classSecurityAnotations.get(apiPath).get
-      } else {
-        false
-      }
+      } else false
     } else {
       if (methodSecurityAnotations.contains(apiPath)) {
         methodSecurityAnotations.get(apiPath).get
-      } else {
-        false
-      }
+      } else false
     }
   }
 
   private def initialize() = {
     //initialize classes
-    classSecurityAnotations += "/user" -> false
-    classSecurityAnotations += "/pet" -> false
-    classSecurityAnotations += "/store" -> true
+    classSecurityAnotations += "/user.{format}" -> false
+    classSecurityAnotations += "/pet.{format}" -> false
+    classSecurityAnotations += "/store.{format}" -> true
 
     //initialize method security
     methodSecurityAnotations += "GET:/pet.{format}/{petId}" -> false
