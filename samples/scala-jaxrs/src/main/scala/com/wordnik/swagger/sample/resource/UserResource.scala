@@ -31,6 +31,8 @@ import com.sun.jersey.spi.resource.Singleton
 import javax.ws.rs.core.Response
 import javax.ws.rs._
 import util.RestResourceUtil
+import scala.collection.JavaConverters._
+
 /**
  * User: ramesh
  * Date: 7/29/11
@@ -45,6 +47,26 @@ trait UserResource extends RestResourceUtil {
   def createUser(
     @ApiParam(value = "Created user object", required = true) user: User) = {
     userData.addUser(user)
+    Response.ok.entity("").build
+  }
+
+  @POST
+  @Path("/createWithArray")
+  @ApiOperation(value = "Creates list of users with given input array")
+  def createUsersWithArrayInput(@ApiParam(value = "List of user object", required = true) users: Array[User]): Response = {
+    for (user <- users) {
+      userData.addUser(user)
+    }
+    Response.ok.entity("").build
+  }
+
+  @POST
+  @Path("/createWithList")
+  @ApiOperation(value = "Creates list of users with given list input")
+  def createUsersWithListInput(@ApiParam(value = "List of user object", required = true) users: java.util.List[User]): Response = {
+    for (user <- users.asScala) {
+      userData.addUser(user)
+    }
     Response.ok.entity("").build
   }
 

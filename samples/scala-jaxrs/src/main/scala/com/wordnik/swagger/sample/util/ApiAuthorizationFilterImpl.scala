@@ -102,6 +102,9 @@ class ApiAuthorizationFilterImpl extends ApiAuthorizationFilter {
     methodSecurityAnotations += "DELETE:/store.{format}/order/{orderId}" -> true
     methodSecurityAnotations += "POST:/store.{format}/order" -> true
     methodSecurityAnotations += "POST:/user.{format}" -> false
+    methodSecurityAnotations += "POST:/user.{format}/createWithArray" -> false
+    methodSecurityAnotations += "POST:/user.{format}/createWithList" -> false
+
     methodSecurityAnotations += "PUT:/user.{format}/{username}" -> true
     methodSecurityAnotations += "DELETE:/user.{format}/{username}" -> true
     methodSecurityAnotations += "GET:/user.{format}/{username}" -> false

@@ -381,22 +381,24 @@ class DocumentationObject extends Name {
     if (fields.length > 0) schemaObject.properties = new HashMap[String, DocumentationSchema]() else return null
 
     fields.foreach(currentField => {
-      val fieldSchema: DocumentationSchema = new DocumentationSchema()
-      setSchemaTypeDef(currentField, fieldSchema)
-      fieldSchema.required = currentField.required
-      fieldSchema.description = currentField.description
-      fieldSchema.notes = currentField.notes
-      fieldSchema.access = currentField.paramAccess
+      if(null != currentField.paramType) {
+        val fieldSchema: DocumentationSchema = new DocumentationSchema()
+        setSchemaTypeDef(currentField, fieldSchema)
+        fieldSchema.required = currentField.required
+        fieldSchema.description = currentField.description
+        fieldSchema.notes = currentField.notes
+        fieldSchema.access = currentField.paramAccess
 
-      if (currentField.allowableValues != null) {
-        fieldSchema.allowableValues = currentField.allowableValues
+        if (currentField.allowableValues != null) {
+          fieldSchema.allowableValues = currentField.allowableValues
+        }
+
+        val useWrapperName = currentField.getWrapperName != null && currentField.getWrapperName.trim().length() > 0
+        if (useWrapperName)
+          schemaObject.properties.put(currentField.getWrapperName(), fieldSchema)
+        else
+          schemaObject.properties.put(currentField.getName, fieldSchema)
       }
-
-      val useWrapperName = currentField.getWrapperName != null && currentField.getWrapperName.trim().length() > 0
-      if (useWrapperName)
-        schemaObject.properties.put(currentField.getWrapperName(), fieldSchema)
-      else
-        schemaObject.properties.put(currentField.getName, fieldSchema)
     })
 
     schemaObject

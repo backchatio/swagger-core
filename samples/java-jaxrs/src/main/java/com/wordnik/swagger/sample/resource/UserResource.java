@@ -21,6 +21,26 @@ public class UserResource extends JavaHelp {
 		return Response.ok().entity("").build();
 	}
 
+    @POST
+    @Path("/createWithArray")
+    @ApiOperation(value = "Creates list of users with given input array")
+    public Response createUsersWithArrayInput(@ApiParam(value = "List of user object", required = true) User[] users) {
+        for (User user : users) {
+            userData.addUser(user);
+        }
+        return Response.ok().entity("").build();
+    }
+
+    @POST
+    @Path("/createWithList")
+    @ApiOperation(value = "Creates list of users with given input array")
+    public Response createUsersWithListInput(@ApiParam(value = "List of user object", required = true) java.util.List<User> users) {
+        for (User user : users) {
+            userData.addUser(user);
+        }
+        return Response.ok().entity("").build();
+    }
+
 	@PUT
 	@Path("/{username}")
 	@ApiOperation(value = "Updated user", notes = "This can only be done by the logged in user.")

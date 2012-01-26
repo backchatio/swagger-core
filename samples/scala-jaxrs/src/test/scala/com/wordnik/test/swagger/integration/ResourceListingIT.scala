@@ -33,4 +33,19 @@ class ResourceListingIT extends FlatSpec with ShouldMatchers {
         "/pet.{format}/findByStatus",
         "/pet.{format}/findByTags")).size == 3)
   }
+
+  it should "read the user api with array and list data types as post data" in {
+    val json = Source.fromURL("http://localhost:8002/api/user.json").mkString
+    val doc = JsonUtil.getJsonMapper.readValue(json, classOf[Documentation])
+    assert(doc.getApis.size === 6)
+    assert((doc.getApis.map(api => api.getPath).toSet &
+      Set("/user.{format}",
+        "/user.{format}/createWithArray",
+        "/user.{format}/createWithList")).size == 3)
+
+    var param = doc.getApis.filter(api => api.getPath == "/user.{format}/createWithList")(0).getOperations()(0).getParameters()(0)
+    assert(param.getDataType() === "List[user]")
+
+  }
+
 }

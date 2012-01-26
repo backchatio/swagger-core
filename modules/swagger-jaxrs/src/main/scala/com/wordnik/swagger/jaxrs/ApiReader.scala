@@ -199,6 +199,7 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
       // Read the params and add to Operation
       val paramAnnotationDoubleArray = method.getParameterAnnotations
       val paramTypes = method.getParameterTypes
+      val genericParamTypes = method.getGenericParameterTypes
       var counter = 0
       var ignoreParam = false
       for (paramAnnotations <- paramAnnotationDoubleArray) {
@@ -208,10 +209,10 @@ class ApiSpecParser(val hostClass: Class[_], val apiVersion: String, val swagger
         // determine value type
         try {
           val paramTypeClass = paramTypes(counter)
-          val paramTypeName = ApiPropertiesReader.readName(paramTypeClass)
+          val paramTypeName = ApiPropertiesReader.getDataType(genericParamTypes(counter), paramTypeClass);
           docParam.dataType = paramTypeName
           if (!paramTypeClass.isPrimitive && !paramTypeClass.getName().contains("java.lang")) {
-            docParam.setValueTypeInternal(paramTypeClass.getName)
+            docParam.setValueTypeInternal(ApiPropertiesReader.getGenericTypeParam(genericParamTypes(counter), paramTypeClass))
           }
         } catch {
           case e: Exception => LOGGER.error("Unable to determine datatype for param " + counter + " in method " + method, e)
