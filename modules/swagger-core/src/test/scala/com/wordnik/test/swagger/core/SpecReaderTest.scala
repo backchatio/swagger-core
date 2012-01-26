@@ -44,7 +44,7 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
       field.name match {
         case "sampleByte" => assert(field.paramType === "byte"); assertedFields += 1;
         case "sampleArrayByte" => assert(field.paramType === "Array[byte]"); assertedFields += 1;
-        case "sampleListString" => assert(field.paramType === "Array[java.lang.String]"); assertedFields += 1;
+        case "sampleListString" => assert(field.paramType === "Array[String]"); assertedFields += 1;
         case _ =>
       }
     }
