@@ -49,7 +49,7 @@ class SpecReaderTest extends FlatSpec with ShouldMatchers {
       field.name match {
         case "sampleByte" => assert(field.paramType === "byte"); assertedFields += 1;
         case "sampleArrayByte" => assert(field.paramType === "Array[byte]"); assertedFields += 1;
-        case "sampleListString" => assert(field.paramType === "Array[java.lang.String]"); assertedFields += 1;
+        case "sampleListString" => assert(field.paramType === "Array[String]"); assertedFields += 1;
         case _ =>
       }
     }
@@ -111,8 +111,8 @@ class ResourceReaderTest extends FlatSpec with ShouldMatchers {
       param.getName() match {
         case "users" =>
         case _ => {
-          assert(param.getDataType() === "Array[java.lang.String]")
-          assert(param.getValueTypeInternal() === "java.lang.String");
+          assert(param.getDataType() === "Array[String]")
+          assert(param.getValueTypeInternal() === "String");
           totalAssertions += 1;
         }; //this mean it is post param hence no name
       }
