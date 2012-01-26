@@ -105,10 +105,6 @@ class Documentation(@BeanProperty var apiVersion: String,
 @XmlRootElement(name = "api")
 class DocumentationEndPoint(@BeanProperty var path: String, @BeanProperty var description: String) {
   def this() = this(null, null)
-  @XmlTransient
-  @JsonIgnore
-  var isHelpEndPoint = false
-
   private var ops = new ListBuffer[DocumentationOperation]
 
   @XmlElement
